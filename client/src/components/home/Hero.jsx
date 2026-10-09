@@ -280,8 +280,8 @@ const Hero = () => {
               }}
             >
               Discover premium physical NFC products for restaurants, cafes,
-              salons, shops, hotels, offices, and professionals. Customize
-              your product and order it your way.
+              salons, shops, hotels, offices, and professionals. Customize your
+              product and order it your way.
             </Typography>
 
             {/* CTAs */}
@@ -338,8 +338,7 @@ const Hero = () => {
                     boxShadow: "0 15px 35px rgba(242, 169, 0, 0.29)",
                     transform: "translateY(-2px)",
                   },
-                  transition:
-                    "transform 180ms ease, box-shadow 180ms ease",
+                  transition: "transform 180ms ease, box-shadow 180ms ease",
                 }}
               >
                 Explore Products
@@ -403,49 +402,43 @@ const Hero = () => {
                 },
               }}
             >
-              {[
-                "Premium Quality",
-                "Custom Designs",
-                "Secure Checkout",
-              ].map((item, index) => (
-                <motion.div
-                  key={item}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    delay: 0.45 + index * 0.08,
-                    duration: 0.4,
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={0.7}
+              {["Premium Quality", "Custom Designs", "Secure Checkout"].map(
+                (item, index) => (
+                  <motion.div
+                    key={item}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      delay: 0.45 + index * 0.08,
+                      duration: 0.4,
+                    }}
                   >
-                    <Box
-                      sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        backgroundColor: "#F2AE00",
-                      }}
-                    />
+                    <Stack direction="row" alignItems="center" spacing={0.7}>
+                      <Box
+                        sx={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          backgroundColor: "#F2AE00",
+                        }}
+                      />
 
-                    <Typography
-                      sx={{
-                        color: "#666666",
-                        fontSize: {
-                          xs: 10.5,
-                          sm: 12,
-                        },
-                        fontWeight: 650,
-                      }}
-                    >
-                      {item}
-                    </Typography>
-                  </Stack>
-                </motion.div>
-              ))}
+                      <Typography
+                        sx={{
+                          color: "#666666",
+                          fontSize: {
+                            xs: 10.5,
+                            sm: 12,
+                          },
+                          fontWeight: 650,
+                        }}
+                      >
+                        {item}
+                      </Typography>
+                    </Stack>
+                  </motion.div>
+                ),
+              )}
             </Stack>
           </MotionBox>
 
@@ -673,8 +666,7 @@ const Hero = () => {
                         borderRadius: "7px",
                         display: "grid",
                         placeItems: "center",
-                        background:
-                          "linear-gradient(135deg, #FFE000, #F2A800)",
+                        background: "linear-gradient(135deg, #FFE000, #F2A800)",
                       }}
                     >
                       <Typography

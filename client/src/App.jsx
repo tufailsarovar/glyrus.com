@@ -1,11 +1,6 @@
 // Glyrus — App.jsx
 
-import React, {
-  Suspense,
-  lazy,
-  useEffect,
-  useState,
-} from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 
 import {
   Navigate,
@@ -15,10 +10,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import {
-  Box,
-  CircularProgress,
-} from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 
 // ============================================================
 // LAYOUTS
@@ -27,12 +19,12 @@ import {
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import AdminLayout from "./components/admin/AdminLayout";
+import Home from "./pages/Home";
 
 // ============================================================
 // PUBLIC PAGES
 // ============================================================
 
-const Home = lazy(() => import("./pages/Home"));
 const About = lazy(() => import("./pages/About"));
 const Products = lazy(() => import("./pages/Products"));
 const ProductDetails = lazy(() => import("./pages/ProductDetails"));
@@ -70,21 +62,11 @@ const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminProducts = lazy(() => import("./pages/admin/Products"));
 const AdminProductForm = lazy(() => import("./pages/admin/ProductForm"));
 const AdminOrders = lazy(() => import("./pages/admin/Orders"));
-const AdminOrderDetails = lazy(
-  () => import("./pages/admin/OrderDetails")
-);
-const AdminCustomers = lazy(
-  () => import("./pages/admin/Customers")
-);
-const AdminRequests = lazy(
-  () => import("./pages/admin/Requests")
-);
-const AdminMessages = lazy(
-  () => import("./pages/admin/Messages")
-);
-const AdminSettings = lazy(
-  () => import("./pages/admin/Settings")
-);
+const AdminOrderDetails = lazy(() => import("./pages/admin/OrderDetails"));
+const AdminCustomers = lazy(() => import("./pages/admin/Customers"));
+const AdminRequests = lazy(() => import("./pages/admin/Requests"));
+const AdminMessages = lazy(() => import("./pages/admin/Messages"));
+const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 
 // ============================================================
 // PAGE LOADER
@@ -226,19 +208,14 @@ const AdminRoute = ({ children }) => {
       return false;
     }
 
-    const loginTime = Number(
-      storage.getItem("Glyrus_admin_login_time")
-    );
+    const loginTime = Number(storage.getItem("Glyrus_admin_login_time"));
 
     if (!loginTime) {
       clearAdminSession();
       return false;
     }
 
-    if (
-      Date.now() - loginTime >=
-      ADMIN_SESSION_DURATION
-    ) {
+    if (Date.now() - loginTime >= ADMIN_SESSION_DURATION) {
       clearAdminSession();
       return false;
     }
@@ -256,9 +233,7 @@ const AdminRoute = ({ children }) => {
       return;
     }
 
-    const loginTime = Number(
-      storage.getItem("Glyrus_admin_login_time")
-    );
+    const loginTime = Number(storage.getItem("Glyrus_admin_login_time"));
 
     if (!loginTime) {
       clearAdminSession();
@@ -282,8 +257,7 @@ const AdminRoute = ({ children }) => {
       return;
     }
 
-    const remainingTime =
-      ADMIN_SESSION_DURATION - elapsed;
+    const remainingTime = ADMIN_SESSION_DURATION - elapsed;
 
     const timer = window.setTimeout(() => {
       clearAdminSession();
@@ -328,7 +302,6 @@ const App = () => {
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
-
           {/* ==================================================
               PUBLIC ROUTES
           ================================================== */}
@@ -468,10 +441,7 @@ const App = () => {
               ADMIN LOGIN
           ================================================== */}
 
-          <Route
-            path="/admin/login"
-            element={<AdminLogin />}
-          />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* ==================================================
               ADMIN
@@ -485,55 +455,25 @@ const App = () => {
               </AdminRoute>
             }
           >
-            <Route
-              index
-              element={<AdminDashboard />}
-            />
+            <Route index element={<AdminDashboard />} />
 
-            <Route
-              path="products"
-              element={<AdminProducts />}
-            />
+            <Route path="products" element={<AdminProducts />} />
 
-            <Route
-              path="products/add"
-              element={<AdminProductForm />}
-            />
+            <Route path="products/add" element={<AdminProductForm />} />
 
-            <Route
-              path="products/edit/:id"
-              element={<AdminProductForm />}
-            />
+            <Route path="products/edit/:id" element={<AdminProductForm />} />
 
-            <Route
-              path="orders"
-              element={<AdminOrders />}
-            />
+            <Route path="orders" element={<AdminOrders />} />
 
-            <Route
-              path="orders/:id"
-              element={<AdminOrderDetails />}
-            />
+            <Route path="orders/:id" element={<AdminOrderDetails />} />
 
-            <Route
-              path="customers"
-              element={<AdminCustomers />}
-            />
+            <Route path="customers" element={<AdminCustomers />} />
 
-            <Route
-              path="requests"
-              element={<AdminRequests />}
-            />
+            <Route path="requests" element={<AdminRequests />} />
 
-            <Route
-              path="messages"
-              element={<AdminMessages />}
-            />
+            <Route path="messages" element={<AdminMessages />} />
 
-            <Route
-              path="settings"
-              element={<AdminSettings />}
-            />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
           {/* ==================================================
@@ -548,7 +488,6 @@ const App = () => {
               </PublicLayout>
             }
           />
-
         </Routes>
       </Suspense>
     </>
