@@ -346,7 +346,7 @@ const Footer = () => {
               </Stack>
             </MotionBox>
 
-            {/* Contact */}
+            {/* Get in Touch */}
             <MotionBox
               variants={sectionAnimation}
               initial="hidden"
@@ -355,11 +355,12 @@ const Footer = () => {
               sx={{
                 gridColumn: { xs: "1 / -1", sm: "auto" },
                 minWidth: 0,
+                width: "100%",
               }}
             >
               <FooterTitle>Get in Touch</FooterTitle>
 
-              <Stack spacing={{ xs: 1.8, sm: 2 }}>
+              <Stack spacing={{ xs: 1.2, sm: 1.8 }}>
                 {[
                   {
                     icon: EmailRounded,
@@ -386,33 +387,35 @@ const Footer = () => {
                     <Stack
                       key={item.label}
                       direction="row"
-                      spacing={1.2}
-                      alignItems="flex-start"
+                      spacing={{ xs: 1, sm: 1.2 }}
+                      alignItems="center"
+                      sx={{ minWidth: 0 }}
                     >
                       <Box
                         sx={{
-                          width: 38,
-                          height: 38,
+                          width: { xs: 32, sm: 38 },
+                          height: { xs: 32, sm: 38 },
                           flexShrink: 0,
                           display: "grid",
                           placeItems: "center",
-                          borderRadius: "11px",
+                          borderRadius: { xs: "9px", sm: "11px" },
                           color: "#FFD000",
                           backgroundColor: "rgba(255,208,0,0.08)",
                         }}
                       >
-                        <Icon sx={{ fontSize: 20 }} />
+                        <Icon sx={{ fontSize: { xs: 16, sm: 20 } }} />
                       </Box>
 
-                      <Box sx={{ minWidth: 0 }}>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography
                           sx={{
-                            mb: 0.3,
+                            mb: 0.2,
                             color: "rgba(255,255,255,0.42)",
-                            fontSize: 11,
+                            fontSize: { xs: 9, sm: 11 },
                             fontWeight: 700,
                             textTransform: "uppercase",
-                            letterSpacing: "0.7px",
+                            letterSpacing: { xs: "0.5px", sm: "0.7px" },
+                            lineHeight: 1.4,
                           }}
                         >
                           {item.label}
@@ -430,11 +433,15 @@ const Footer = () => {
                             sx={{
                               display: "block",
                               color: "rgba(255,255,255,0.7)",
-                              fontSize: { xs: 12, sm: 13 },
-                              lineHeight: 1.55,
+                              fontSize: { xs: 11, sm: 13 },
+                              fontWeight: 500,
+                              lineHeight: 1.5,
                               overflowWrap: "anywhere",
                               textDecoration: "none",
-                              "&:hover": { color: "#FFD000" },
+                              transition: "color 180ms ease",
+                              "&:hover": {
+                                color: "#FFD000",
+                              },
                             }}
                           >
                             {item.value}
@@ -443,8 +450,10 @@ const Footer = () => {
                           <Typography
                             sx={{
                               color: "rgba(255,255,255,0.7)",
-                              fontSize: { xs: 12, sm: 13 },
-                              lineHeight: 1.55,
+                              fontSize: { xs: 11, sm: 13 },
+                              fontWeight: 500,
+                              lineHeight: 1.5,
+                              overflowWrap: "anywhere",
                             }}
                           >
                             {item.value}
