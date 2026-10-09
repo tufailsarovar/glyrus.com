@@ -13,7 +13,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import trackingRoutes from "./routes/trackingRoutes.js";
 import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-
+import connectDB from "./config/db.js";
 const app = express();
 
 /* -------------------------------------------------------
@@ -133,6 +133,24 @@ app.get("/api/health", (req, res) => {
     message: "Glyrus API is running.",
     timestamp: new Date().toISOString(),
   });
+});
+
+/* -------------------------------------------------------
+   DATABASE CONNECTION — VERCEL
+------------------------------------------------------- */
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection error:", error.message);
+
+    res.status(503).json({
+      success: false,
+      message: "Database connection unavailable.",
+    });
+  }
 });
 
 /* -------------------------------------------------------
