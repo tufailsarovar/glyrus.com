@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -36,12 +35,7 @@ const MotionBox = motion(Box);
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    addToCart,
-    getCartItem,
-    updateQuantity,
-    removeFromCart,
-  } = useCart();
+  const { addToCart, getCartItem, updateQuantity, removeFromCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,7 +84,7 @@ const ProductDetails = () => {
         setError(
           err?.response?.data?.message ||
             err?.message ||
-            "Unable to load this product."
+            "Unable to load this product.",
         );
       } finally {
         if (mounted) setLoading(false);
@@ -111,14 +105,14 @@ const ProductDetails = () => {
 
   const productName = useMemo(
     () => product?.title || product?.name || "NFC Product",
-    [product]
+    [product],
   );
 
   const productDescription = useMemo(
     () =>
       product?.description ||
       "Premium NFC product designed for modern businesses.",
-    [product]
+    [product],
   );
 
   const productPrice = useMemo(() => getProductPrice(product), [product]);
@@ -142,13 +136,11 @@ const ProductDetails = () => {
       });
     }
 
-    [product.image, product.thumbnail, product.imageUrl].forEach(
-      (image) => {
-        if (typeof image === "string" && image.trim()) {
-          images.push(image);
-        }
+    [product.image, product.thumbnail, product.imageUrl].forEach((image) => {
+      if (typeof image === "string" && image.trim()) {
+        images.push(image);
       }
-    );
+    });
 
     return [...new Set(images.filter(Boolean))];
   }, [product]);
@@ -156,9 +148,7 @@ const ProductDetails = () => {
   const handleCustomizationChange = (nextValues) => {
     setSelectedCustomization((previous) => ({
       ...previous,
-      ...(nextValues && typeof nextValues === "object"
-        ? nextValues
-        : {}),
+      ...(nextValues && typeof nextValues === "object" ? nextValues : {}),
     }));
   };
 
@@ -192,7 +182,7 @@ const ProductDetails = () => {
           ...product,
           quantity,
           customization: selectedCustomization,
-        })
+        }),
       );
 
       setAdded(true);
@@ -215,7 +205,7 @@ const ProductDetails = () => {
           ...product,
           quantity,
           customization: selectedCustomization,
-        })
+        }),
       );
 
       navigate("/cart");
@@ -253,9 +243,7 @@ const ProductDetails = () => {
 
   const category = product.category || "NFC Products";
   const rating = Number(product.rating || 0);
-  const reviewCount = Number(
-    product.reviewCount || product.reviewsCount || 0
-  );
+  const reviewCount = Number(product.reviewCount || product.reviewsCount || 0);
 
   const productActions = (
     <>
@@ -321,7 +309,7 @@ const ProductDetails = () => {
         disabled={adding}
         sx={primaryButtonSx}
       >
-        {adding ? "Please wait..." : "Buy Now"}
+        {adding ? "Processing..." : "Buy Now"}
       </Button>
     </>
   );
@@ -330,15 +318,11 @@ const ProductDetails = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(180deg, #fff 0%, #fffdf7 55%, #fff 100%)",
+        background: "linear-gradient(180deg, #fff 0%, #fffdf7 55%, #fff 100%)",
         pb: { xs: "115px", sm: "125px", md: 10 },
       }}
     >
-      <Container
-        maxWidth="xl"
-        sx={{ pt: { xs: 2, sm: 3, md: 4 } }}
-      >
+      <Container maxWidth="xl" sx={{ pt: { xs: 2, sm: 3, md: 4 } }}>
         <Breadcrumbs
           separator="›"
           sx={{
@@ -585,10 +569,7 @@ const ProductDetails = () => {
               )}
 
               {/* Desktop/tablet product actions */}
-              <Stack
-                spacing={1.2}
-                sx={{ display: { xs: "none", md: "flex" } }}
-              >
+              <Stack spacing={1.2} sx={{ display: { xs: "none", md: "flex" } }}>
                 {productActions}
               </Stack>
 
@@ -715,9 +696,7 @@ const ProductDetails = () => {
                   alignItems="center"
                   sx={{ p: 1.3, borderRadius: 2, backgroundColor: "#fafafa" }}
                 >
-                  <CheckCircleOutline
-                    sx={{ color: "#d5a000", fontSize: 19 }}
-                  />
+                  <CheckCircleOutline sx={{ color: "#d5a000", fontSize: 19 }} />
                   <Typography
                     sx={{ color: "#444", fontSize: "0.82rem", fontWeight: 600 }}
                   >
@@ -842,7 +821,7 @@ const ProductDetails = () => {
                 whiteSpace: "nowrap",
               }}
             >
-              {adding ? "Please wait..." : "Buy Now"}
+              {adding ? "Processing..." : "Buy Now"}
             </Button>
           </Stack>
         </Container>
@@ -881,11 +860,7 @@ const getProductPrice = (product) => {
   const originalPrice = Number(product.price) || 0;
   const discountPrice = Number(product.discountPrice) || 0;
 
-  if (
-    discountPrice > 0 &&
-    originalPrice > 0 &&
-    discountPrice < originalPrice
-  ) {
+  if (discountPrice > 0 && originalPrice > 0 && discountPrice < originalPrice) {
     return discountPrice;
   }
 
@@ -898,11 +873,7 @@ const getOriginalPrice = (product) => {
   const originalPrice = Number(product.price) || 0;
   const discountPrice = Number(product.discountPrice) || 0;
 
-  if (
-    discountPrice > 0 &&
-    originalPrice > 0 &&
-    discountPrice < originalPrice
-  ) {
+  if (discountPrice > 0 && originalPrice > 0 && discountPrice < originalPrice) {
     return originalPrice;
   }
 
@@ -920,9 +891,7 @@ const getDiscountPercentage = (product) => {
 
 const getMaxQuantity = (product) => {
   const stock = Number(
-    product?.stock ??
-      product?.quantityAvailable ??
-      product?.inventory
+    product?.stock ?? product?.quantityAvailable ?? product?.inventory,
   );
 
   if (Number.isFinite(stock) && stock > 0) {
@@ -935,18 +904,18 @@ const getMaxQuantity = (product) => {
 const hasCustomization = (product) =>
   Boolean(
     product?.isCustomizable ||
-      product?.customizable ||
-      product?.customization ||
-      (Array.isArray(product?.customizationOptions) &&
-        product.customizationOptions.length > 0)
+    product?.customizable ||
+    product?.customization ||
+    (Array.isArray(product?.customizationOptions) &&
+      product.customizationOptions.length > 0),
   );
 
 const hasVideo = (product) =>
   Boolean(
     product?.video ||
-      product?.videoUrl ||
-      product?.videoURL ||
-      product?.productVideo
+    product?.videoUrl ||
+    product?.videoURL ||
+    product?.productVideo,
   );
 
 const formatCategory = (value) =>
