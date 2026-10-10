@@ -621,7 +621,7 @@ const ProductDetails = () => {
                     }
                     sx={textToggleSx}
                   >
-                    {descriptionExpanded ? "See less" : "See more"}
+                    {descriptionExpanded ? "See less" : "Read Full Description"}
                   </Button>
                 )}
               </Box>
