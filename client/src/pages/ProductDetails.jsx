@@ -14,13 +14,17 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  CheckCircleOutline,
-  HomeOutlined,
+  ArrowBackRounded,
+  CheckCircleRounded,
+  HomeRounded,
   LocalShippingOutlined,
   ShoppingCartOutlined,
   SupportAgentOutlined,
+  AddRounded,
+  RemoveRounded,
+  VerifiedRounded,
 } from "@mui/icons-material";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { getProduct } from "../services/api";
@@ -43,6 +47,7 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedCustomization, setSelectedCustomization] = useState({});
   const [adding, setAdding] = useState(false);
+  const [addingMode, setAddingMode] = useState("");
   const [added, setAdded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
@@ -76,6 +81,8 @@ const ProductDetails = () => {
           setProduct(productData);
           setSelectedCustomization({});
           setQuantity(1);
+          setDescriptionExpanded(false);
+          setDetailsExpanded(false);
         }
       } catch (err) {
         if (!mounted) return;
@@ -111,7 +118,7 @@ const ProductDetails = () => {
   const productDescription = useMemo(
     () =>
       product?.description ||
-      "Premium NFC product designed for modern businesses.",
+      "A premium NFC product designed to help modern businesses connect with customers more easily.",
     [product],
   );
 
@@ -176,6 +183,7 @@ const ProductDetails = () => {
 
     try {
       setAdding(true);
+      setAddingMode("cart");
 
       await Promise.resolve(
         addToCart({
@@ -191,6 +199,7 @@ const ProductDetails = () => {
       console.error("Unable to add product to cart:", err);
     } finally {
       setAdding(false);
+      setAddingMode("");
     }
   };
 
@@ -199,6 +208,7 @@ const ProductDetails = () => {
 
     try {
       setAdding(true);
+      setAddingMode("buy");
 
       await Promise.resolve(
         addToCart({
@@ -213,6 +223,7 @@ const ProductDetails = () => {
       console.error("Unable to proceed to checkout:", err);
     } finally {
       setAdding(false);
+      setAddingMode("");
     }
   };
 
@@ -220,16 +231,16 @@ const ProductDetails = () => {
     return (
       <Box
         sx={{
-          minHeight: "70vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#fff",
+          minHeight: "65vh",
+          display: "grid",
+          placeItems: "center",
+          background: "#fff",
+          px: 2,
         }}
       >
         <Stack alignItems="center" spacing={1.5}>
-          <CircularProgress size={42} sx={{ color: "#d9a000" }} />
-          <Typography sx={{ color: "#666", fontWeight: 600 }}>
+          <CircularProgress size={34} sx={{ color: "#c99716" }} />
+          <Typography sx={{ color: "#777", fontSize: 13, fontWeight: 600 }}>
             Loading product...
           </Typography>
         </Stack>
@@ -244,49 +255,33 @@ const ProductDetails = () => {
   const category = product.category || "NFC Products";
   const rating = Number(product.rating || 0);
   const reviewCount = Number(product.reviewCount || product.reviewsCount || 0);
+  const originalPrice = getOriginalPrice(product);
+  const discount = getDiscountPercentage(product);
+  const hasOptions = hasCustomization(product);
 
   const productActions = (
     <>
       {cartQuantity > 0 ? (
-        <Box
-          sx={{
-            width: "100%",
-            minHeight: 50,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "1px solid rgba(215,164,0,0.35)",
-            borderRadius: 2.5,
-            backgroundColor: "#fff",
-            overflow: "hidden",
-          }}
-        >
+        <Box sx={quantityControlSx}>
           <IconButton
             onClick={handleDecreaseCartQuantity}
             aria-label="Decrease quantity"
-            sx={{ width: 50, height: 50, color: "#222" }}
+            size="small"
+            sx={quantityIconSx}
           >
-            <Typography sx={{ fontSize: "1.35rem" }}>−</Typography>
+            <RemoveRounded fontSize="small" />
           </IconButton>
 
-          <Typography
-            sx={{
-              minWidth: 40,
-              textAlign: "center",
-              fontWeight: 900,
-              color: "#b17d00",
-            }}
-          >
-            {cartQuantity}
-          </Typography>
+          <Typography sx={quantityNumberSx}>{cartQuantity}</Typography>
 
           <IconButton
             onClick={handleIncreaseCartQuantity}
             disabled={cartQuantity >= getMaxQuantity(product)}
             aria-label="Increase quantity"
-            sx={{ width: 50, height: 50, color: "#222" }}
+            size="small"
+            sx={quantityIconSx}
           >
-            <Typography sx={{ fontSize: "1.35rem" }}>+</Typography>
+            <AddRounded fontSize="small" />
           </IconButton>
         </Box>
       ) : (
@@ -298,7 +293,11 @@ const ProductDetails = () => {
           disabled={adding}
           sx={secondaryButtonSx}
         >
-          {adding ? "Adding..." : added ? "Added to Cart ✓" : "Add to Cart"}
+          {adding && addingMode === "cart"
+            ? "Adding..."
+            : added
+              ? "Added to Cart ✓"
+              : "Add to Cart"}
         </Button>
       )}
 
@@ -309,7 +308,7 @@ const ProductDetails = () => {
         disabled={adding}
         sx={primaryButtonSx}
       >
-        {adding ? "Processing..." : "Buy Now"}
+        {adding && addingMode === "buy" ? "Processing..." : "Buy Now"}
       </Button>
     </>
   );
@@ -318,63 +317,61 @@ const ProductDetails = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        background: "linear-gradient(180deg, #fff 0%, #fffdf7 55%, #fff 100%)",
-        pb: { xs: "115px", sm: "125px", md: 10 },
+        overflowX: "clip",
+        pb: { xs: "76px", md: 7 },
+        background:
+          "radial-gradient(ellipse at 12% 0%, rgba(246,220,146,0.16), transparent 34%), #fff",
       }}
     >
-      <Container maxWidth="xl" sx={{ pt: { xs: 2, sm: 3, md: 4 } }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          pt: { xs: 1.2, sm: 3, md: 4 },
+          px: { xs: 1.5, sm: 2.5, md: 3 },
+        }}
+      >
+        {/* Breadcrumbs */}
         <Breadcrumbs
           separator="›"
           sx={{
-            mb: { xs: 2.5, md: 4 },
-            "& .MuiBreadcrumbs-separator": { color: "#aaa" },
+            mb: { xs: 1.5, sm: 3 },
+            "& .MuiBreadcrumbs-separator": { color: "#bbb", mx: 0.5 },
           }}
         >
-          <MuiLink
-            component={Link}
-            to="/"
-            underline="none"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-              color: "#777",
-              fontSize: "0.84rem",
-              fontWeight: 600,
-            }}
-          >
-            <HomeOutlined sx={{ fontSize: 17 }} />
-            Home
+          <MuiLink component={Link} to="/" underline="none" sx={breadcrumbSx}>
+            <HomeRounded sx={{ fontSize: 16 }} />
+            <Box
+              component="span"
+              sx={{ display: { xs: "none", sm: "inline" } }}
+            >
+              Home
+            </Box>
           </MuiLink>
 
           <MuiLink
             component={Link}
             to="/products"
             underline="none"
-            sx={{
-              color: "#777",
-              fontSize: "0.84rem",
-              fontWeight: 600,
-            }}
+            sx={breadcrumbSx}
           >
             Products
           </MuiLink>
 
           <Typography
             sx={{
+              ...breadcrumbSx,
               color: "#222",
-              fontSize: "0.84rem",
-              fontWeight: 700,
-              maxWidth: { xs: 130, sm: 280 },
+              maxWidth: { xs: 125, sm: 280 },
               overflow: "hidden",
-              textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
             }}
           >
             {productName}
           </Typography>
         </Breadcrumbs>
 
+        {/* Main product layout */}
         <Box
           sx={{
             display: "grid",
@@ -382,58 +379,67 @@ const ProductDetails = () => {
               xs: "minmax(0, 1fr)",
               lg: "minmax(0, 1.05fr) minmax(0, 0.95fr)",
             },
-            gap: { xs: 3, sm: 4, md: 5, lg: 7 },
+            gap: { xs: 2, sm: 4, md: 5, lg: 7 },
             alignItems: "start",
           }}
         >
+          {/* Product gallery */}
           <MotionBox
-            initial={{ opacity: 0, x: -25 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.55 }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            sx={{ minWidth: 0 }}
           >
             <ProductGallery images={productImages} product={product} />
           </MotionBox>
 
+          {/* Product information */}
           <MotionBox
-            initial={{ opacity: 0, x: 25 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.55, delay: 0.08 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.06, ease: "easeOut" }}
+            sx={{ minWidth: 0 }}
           >
-            <Stack spacing={{ xs: 2, sm: 2.5 }}>
-              <Chip
-                label={formatCategory(category)}
-                size="small"
-                sx={{
-                  width: "fit-content",
-                  borderRadius: 1.8,
-                  backgroundColor: "#fff4c7",
-                  color: "#8c6500",
-                  border: "1px solid rgba(215,164,0,0.18)",
-                  fontWeight: 800,
-                }}
-              />
+            <Stack spacing={{ xs: 1.4, sm: 2.3 }}>
+              <Box>
+                <Chip
+                  label={formatCategory(category)}
+                  size="small"
+                  sx={{
+                    height: 25,
+                    mb: 1,
+                    borderRadius: 1.5,
+                    background: "#fff5d6",
+                    color: "#896000",
+                    border: "1px solid #f1e1aa",
+                    fontWeight: 800,
+                    fontSize: 11,
+                  }}
+                />
 
-              <Typography
-                component="h1"
-                sx={{
-                  fontSize: {
-                    xs: "1.8rem",
-                    sm: "2.3rem",
-                    md: "2.7rem",
-                  },
-                  lineHeight: 1.12,
-                  letterSpacing: "-0.04em",
-                  fontWeight: 900,
-                  color: "#111",
-                }}
-              >
-                {productName}
-              </Typography>
+                <Typography
+                  component="h1"
+                  sx={{
+                    fontSize: {
+                      xs: "1.42rem",
+                      sm: "2.1rem",
+                      md: "2.6rem",
+                    },
+                    lineHeight: { xs: 1.22, md: 1.12 },
+                    letterSpacing: "-0.035em",
+                    fontWeight: 900,
+                    color: "#171717",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {productName}
+                </Typography>
+              </Box>
 
               {rating > 0 && (
                 <Stack
                   direction="row"
-                  spacing={1}
+                  spacing={0.7}
                   alignItems="center"
                   flexWrap="wrap"
                 >
@@ -443,28 +449,34 @@ const ProductDetails = () => {
                     readOnly
                     size="small"
                     sx={{
-                      "& .MuiRating-iconFilled": { color: "#e0a400" },
+                      "& .MuiRating-iconFilled": { color: "#dfa900" },
+                      "& .MuiRating-iconEmpty": { color: "#e9e2d0" },
                     }}
                   />
-                  <Typography sx={{ fontSize: "0.86rem", color: "#666" }}>
+                  <Typography
+                    sx={{ color: "#555", fontSize: 12, fontWeight: 700 }}
+                  >
                     {rating.toFixed(1)}
-                    {reviewCount > 0 &&
-                      ` (${reviewCount} ${
-                        reviewCount === 1 ? "review" : "reviews"
-                      })`}
                   </Typography>
+                  {reviewCount > 0 && (
+                    <Typography sx={{ color: "#888", fontSize: 12 }}>
+                      ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
+                    </Typography>
+                  )}
                 </Stack>
               )}
 
+              {/* Short description */}
               <Box>
                 <Typography
                   sx={{
                     color: "#666",
-                    fontSize: { xs: "0.93rem", sm: "1rem" },
-                    lineHeight: 1.8,
+                    fontSize: { xs: 13, sm: 15 },
+                    lineHeight: { xs: 1.7, sm: 1.8 },
+                    overflowWrap: "anywhere",
                     ...(!descriptionExpanded && {
                       display: "-webkit-box",
-                      WebkitLineClamp: 4,
+                      WebkitLineClamp: { xs: 3, sm: 4 },
                       WebkitBoxOrient: "vertical",
                       overflow: "hidden",
                     }),
@@ -473,7 +485,7 @@ const ProductDetails = () => {
                   {productDescription}
                 </Typography>
 
-                {String(productDescription).length > 180 && (
+                {String(productDescription).length > 150 && (
                   <Button
                     onClick={() =>
                       setDescriptionExpanded((previous) => !previous)
@@ -485,82 +497,95 @@ const ProductDetails = () => {
                 )}
               </Box>
 
-              <Divider />
+              <Divider sx={{ borderColor: "#eee" }} />
 
+              {/* Price */}
               <Stack
                 direction="row"
-                alignItems="baseline"
-                spacing={1.5}
+                alignItems="center"
+                spacing={1}
                 flexWrap="wrap"
+                useFlexGap
               >
                 <Typography
                   sx={{
-                    fontSize: { xs: "1.9rem", sm: "2.2rem" },
-                    lineHeight: 1,
+                    fontSize: { xs: "1.55rem", sm: "2.15rem" },
+                    lineHeight: 1.1,
                     fontWeight: 900,
-                    color: "#111",
-                    letterSpacing: "-0.035em",
+                    letterSpacing: "-0.04em",
+                    color: "#151515",
                   }}
                 >
                   {formatCurrency(productPrice)}
                 </Typography>
 
-                {getOriginalPrice(product) > productPrice && (
+                {originalPrice > productPrice && (
                   <Typography
                     sx={{
                       color: "#999",
                       textDecoration: "line-through",
-                      fontSize: "1rem",
+                      fontSize: { xs: 12, sm: 15 },
                       fontWeight: 600,
                     }}
                   >
-                    {formatCurrency(getOriginalPrice(product))}
+                    {formatCurrency(originalPrice)}
                   </Typography>
                 )}
 
-                {getDiscountPercentage(product) > 0 && (
+                {discount > 0 && (
                   <Chip
-                    label={`${getDiscountPercentage(product)}% OFF`}
+                    label={`${discount}% OFF`}
                     size="small"
                     sx={{
-                      backgroundColor: "#111",
-                      color: "#fff",
-                      fontWeight: 800,
+                      height: 23,
+                      background: "#eaf6e9",
+                      color: "#27733b",
+                      fontSize: 10,
+                      fontWeight: 900,
                     }}
                   />
                 )}
               </Stack>
 
-              <Typography sx={{ color: "#888", fontSize: "0.78rem" }}>
+              <Typography sx={{ color: "#999", fontSize: 11 }}>
                 Inclusive of applicable taxes
               </Typography>
 
-              <Stack spacing={1.2}>
-                <Feature
-                  icon={<CheckCircleOutline />}
-                  text="Premium quality NFC product"
-                />
-                <Feature
-                  icon={<LocalShippingOutlined />}
-                  text="Secure packaging and reliable delivery"
-                />
-                <Feature
-                  icon={<SupportAgentOutlined />}
-                  text="Support available for your order"
-                />
-              </Stack>
+              {/* Product benefits */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr" },
+                  gap: { xs: 1, sm: 1.2 },
+                }}
+              >
+                <Feature text="Premium quality NFC product" />
+                <Feature text="Secure packaging and reliable delivery" />
+                <Feature text="Customer support for your order" />
+              </Box>
 
-              {hasCustomization(product) && (
+              {/* Customization */}
+              {hasOptions && (
                 <Box
                   sx={{
-                    mt: 0.5,
-                    p: { xs: 1.5, sm: 2 },
-                    borderRadius: 3,
-                    backgroundColor: "#fff",
-                    border: "1px solid rgba(0,0,0,0.07)",
-                    boxShadow: "0 8px 28px rgba(0,0,0,0.045)",
+                    p: { xs: 1.5, sm: 2.2 },
+                    borderRadius: { xs: 2.5, sm: 3 },
+                    background: "#fff",
+                    border: "1px solid #eee8d9",
+                    boxShadow: "0 5px 20px rgba(0,0,0,0.025)",
                   }}
                 >
+                  <Typography
+                    sx={{
+                      fontSize: 14,
+                      fontWeight: 850,
+                      mb: 1.2,
+                      color: "#222",
+                    }}
+                  >
+                    Personalize your product
+                  </Typography>
+
                   <ProductCustomization
                     customization={selectedCustomization}
                     onChange={handleCustomizationChange}
@@ -568,43 +593,43 @@ const ProductDetails = () => {
                 </Box>
               )}
 
-              {/* Desktop/tablet product actions */}
-              <Stack spacing={1.2} sx={{ display: { xs: "none", md: "flex" } }}>
+              {/* Desktop purchase controls */}
+              <Stack
+                spacing={1}
+                sx={{ display: { xs: "none", md: "flex" }, pt: 0.5 }}
+              >
                 {productActions}
               </Stack>
 
+              {/* Delivery information */}
               <Box
                 sx={{
-                  p: 1.7,
+                  p: { xs: 1.3, sm: 1.8 },
                   borderRadius: 2.5,
-                  backgroundColor: "#fff9e5",
-                  border: "1px solid rgba(220,170,0,0.14)",
+                  background: "#fffbef",
+                  border: "1px solid #f3e9c9",
                 }}
               >
-                <Stack direction="row" spacing={1.2} alignItems="flex-start">
+                <Stack direction="row" spacing={1.1} alignItems="flex-start">
                   <LocalShippingOutlined
-                    sx={{ color: "#b47d00", fontSize: 21, mt: 0.1 }}
+                    sx={{ color: "#a77700", fontSize: 21, mt: 0.1 }}
                   />
-                  <Box>
+                  <Box sx={{ minWidth: 0 }}>
                     <Typography
-                      sx={{
-                        fontSize: "0.86rem",
-                        fontWeight: 800,
-                        color: "#332700",
-                      }}
+                      sx={{ fontSize: 12, fontWeight: 850, color: "#44350d" }}
                     >
-                      Delivery & Order Support
+                      Delivery & order support
                     </Typography>
                     <Typography
                       sx={{
                         mt: 0.35,
-                        fontSize: "0.78rem",
-                        lineHeight: 1.55,
-                        color: "#76652e",
+                        fontSize: 11,
+                        lineHeight: 1.6,
+                        color: "#827345",
                       }}
                     >
-                      After placing your order, you will receive order and
-                      tracking details on your email.
+                      Order and tracking information will be shared with you
+                      through your registered email, where available.
                     </Typography>
                   </Box>
                 </Stack>
@@ -613,51 +638,56 @@ const ProductDetails = () => {
           </MotionBox>
         </Box>
 
+        {/* Product video */}
         {hasVideo(product) && (
           <MotionBox
-            initial={{ opacity: 0, y: 25 }}
+            initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.5 }}
-            sx={{ mt: { xs: 6, md: 9 } }}
+            transition={{ duration: 0.4 }}
+            sx={{ mt: { xs: 4, md: 8 } }}
           >
             <ProductVideo product={product} />
           </MotionBox>
         )}
 
+        {/* More product details */}
         <MotionBox
-          initial={{ opacity: 0, y: 25 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.5 }}
+          viewport={{ once: true, amount: 0.12 }}
+          transition={{ duration: 0.4 }}
           sx={{
-            mt: { xs: 6, md: 9 },
-            p: { xs: 2, sm: 3, md: 4 },
-            borderRadius: { xs: 3, md: 4 },
-            backgroundColor: "#fff",
-            border: "1px solid rgba(0,0,0,0.07)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.045)",
+            mt: { xs: 4, md: 8 },
+            p: { xs: 1.7, sm: 3, md: 4 },
+            borderRadius: { xs: 2.5, md: 4 },
+            background: "#fff",
+            border: "1px solid #eee",
+            boxShadow: "0 8px 35px rgba(0,0,0,0.035)",
           }}
         >
           <Typography
+            component="h2"
             sx={{
-              fontSize: { xs: "1.25rem", sm: "1.45rem" },
+              fontSize: { xs: 17, sm: 22 },
               fontWeight: 900,
-              color: "#111",
+              letterSpacing: "-0.025em",
+              color: "#171717",
               mb: 1.2,
             }}
           >
-            Product Details
+            Product details
           </Typography>
 
           <Typography
             sx={{
               color: "#666",
-              fontSize: "0.94rem",
+              fontSize: { xs: 13, sm: 15 },
               lineHeight: 1.8,
+              overflowWrap: "anywhere",
               ...(!detailsExpanded && {
                 display: "-webkit-box",
-                WebkitLineClamp: 5,
+                WebkitLineClamp: { xs: 4, sm: 5 },
                 WebkitBoxOrient: "vertical",
                 overflow: "hidden",
               }),
@@ -666,56 +696,74 @@ const ProductDetails = () => {
             {productDescription}
           </Typography>
 
-          {String(productDescription).length > 220 && (
+          {String(productDescription).length > 180 && (
             <Button
               onClick={() => setDetailsExpanded((previous) => !previous)}
               sx={textToggleSx}
             >
-              {detailsExpanded ? "See less" : "See more"}
+              {detailsExpanded ? "See less" : "Read full description"}
             </Button>
           )}
 
           {Array.isArray(product.features) && product.features.length > 0 && (
             <Box
               sx={{
-                mt: 3,
+                mt: 2.5,
                 display: "grid",
                 gridTemplateColumns: {
                   xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
+                  sm: "repeat(2, minmax(0, 1fr))",
+                  md: "repeat(3, minmax(0, 1fr))",
                 },
-                gap: 1.2,
+                gap: 1,
               }}
             >
-              {product.features.map((feature, index) => (
-                <Stack
-                  key={`${String(feature?.title || feature)}-${index}`}
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  sx={{ p: 1.3, borderRadius: 2, backgroundColor: "#fafafa" }}
-                >
-                  <CheckCircleOutline sx={{ color: "#d5a000", fontSize: 19 }} />
-                  <Typography
-                    sx={{ color: "#444", fontSize: "0.82rem", fontWeight: 600 }}
+              {product.features.map((feature, index) => {
+                const label =
+                  typeof feature === "string"
+                    ? feature
+                    : feature?.title || feature?.name || "";
+
+                return (
+                  <Stack
+                    key={`${label}-${index}`}
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{
+                      minWidth: 0,
+                      p: 1.2,
+                      borderRadius: 2,
+                      background: "#faf9f5",
+                    }}
                   >
-                    {typeof feature === "string"
-                      ? feature
-                      : feature?.title || feature?.name || ""}
-                  </Typography>
-                </Stack>
-              ))}
+                    <CheckCircleRounded
+                      sx={{ color: "#c59617", fontSize: 18, flexShrink: 0 }}
+                    />
+                    <Typography
+                      sx={{
+                        minWidth: 0,
+                        color: "#555",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                  </Stack>
+                );
+              })}
             </Box>
           )}
 
           {Array.isArray(product.techStack) && product.techStack.length > 0 && (
             <Stack
               direction="row"
-              spacing={0.8}
+              spacing={0.7}
               flexWrap="wrap"
               useFlexGap
-              sx={{ mt: 3 }}
+              sx={{ mt: 2.5 }}
             >
               {product.techStack.map((item, index) => (
                 <Chip
@@ -724,9 +772,10 @@ const ProductDetails = () => {
                   size="small"
                   sx={{
                     borderRadius: 1.5,
-                    backgroundColor: "#f5f5f5",
+                    background: "#f6f5f1",
                     color: "#555",
-                    fontWeight: 600,
+                    fontWeight: 650,
+                    fontSize: 11,
                   }}
                 />
               ))}
@@ -735,7 +784,7 @@ const ProductDetails = () => {
         </MotionBox>
       </Container>
 
-      {/* Fixed mobile purchase bar */}
+      {/* Compact mobile purchase bar */}
       <Box
         sx={{
           display: { xs: "block", md: "none" },
@@ -744,46 +793,52 @@ const ProductDetails = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          p: 1.2,
-          pb: "calc(10px + env(safe-area-inset-bottom, 0px))",
-          backgroundColor: "rgba(255,255,255,0.97)",
-          backdropFilter: "blur(12px)",
-          borderTop: "1px solid rgba(0,0,0,0.09)",
-          boxShadow: "0 -8px 24px rgba(0,0,0,0.08)",
+          p: 0.8,
+          pb: "calc(7px + env(safe-area-inset-bottom, 0px))",
+          background: "rgba(255,255,255,0.96)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderTop: "1px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 -5px 22px rgba(0,0,0,0.055)",
         }}
       >
         <Container maxWidth="sm" disableGutters>
-          <Stack direction="row" spacing={1} alignItems="stretch">
+          <Stack direction="row" spacing={0.8} alignItems="stretch">
             <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
               {cartQuantity > 0 ? (
                 <Box
                   sx={{
                     width: "100%",
+                    minHeight: 41,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-around",
-                    border: "1px solid rgba(215,164,0,0.35)",
-                    borderRadius: 2.5,
-                    backgroundColor: "#fff",
+                    border: "1px solid #e8d8a6",
+                    borderRadius: 2,
+                    background: "#fff",
                   }}
                 >
                   <IconButton
                     onClick={handleDecreaseCartQuantity}
                     aria-label="Decrease cart quantity"
                     size="small"
+                    sx={{ color: "#292929", p: 0.6 }}
                   >
-                    −
+                    <RemoveRounded fontSize="small" />
                   </IconButton>
-                  <Typography sx={{ fontWeight: 900 }}>
+
+                  <Typography sx={{ fontSize: 13, fontWeight: 900 }}>
                     {cartQuantity}
                   </Typography>
+
                   <IconButton
                     onClick={handleIncreaseCartQuantity}
                     disabled={cartQuantity >= getMaxQuantity(product)}
                     aria-label="Increase cart quantity"
                     size="small"
+                    sx={{ color: "#292929", p: 0.6 }}
                   >
-                    +
+                    <AddRounded fontSize="small" />
                   </IconButton>
                 </Box>
               ) : (
@@ -792,17 +847,23 @@ const ProductDetails = () => {
                   variant="outlined"
                   onClick={handleAddToCart}
                   disabled={adding}
-                  startIcon={<ShoppingCartOutlined />}
+                  startIcon={<ShoppingCartOutlined sx={{ fontSize: 17 }} />}
                   sx={{
                     ...secondaryButtonSx,
                     minWidth: 0,
-                    minHeight: 48,
-                    px: 1,
-                    fontSize: "0.78rem",
+                    minHeight: 41,
+                    px: 0.7,
+                    fontSize: 11,
+                    borderRadius: 2,
                     whiteSpace: "nowrap",
+                    "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
                   }}
                 >
-                  {adding ? "Adding..." : added ? "Added ✓" : "Add to Cart"}
+                  {adding && addingMode === "cart"
+                    ? "Adding..."
+                    : added
+                      ? "Added ✓"
+                      : "Add to Cart"}
                 </Button>
               )}
             </Box>
@@ -815,13 +876,14 @@ const ProductDetails = () => {
                 ...primaryButtonSx,
                 flex: 1,
                 minWidth: 0,
-                minHeight: 48,
-                px: 1,
-                fontSize: "0.84rem",
+                minHeight: 41,
+                px: 0.7,
+                fontSize: 12,
+                borderRadius: 2,
                 whiteSpace: "nowrap",
               }}
             >
-              {adding ? "Processing..." : "Buy Now"}
+              {adding && addingMode === "buy" ? "Processing..." : "Buy Now"}
             </Button>
           </Stack>
         </Container>
@@ -830,25 +892,23 @@ const ProductDetails = () => {
   );
 };
 
-const Feature = ({ icon, text }) => (
-  <Stack direction="row" spacing={1} alignItems="center">
+const Feature = ({ text }) => (
+  <Stack direction="row" spacing={0.9} alignItems="center">
     <Box
       sx={{
-        width: 28,
-        height: 28,
+        width: 25,
+        height: 25,
         borderRadius: "50%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: "grid",
+        placeItems: "center",
         flexShrink: 0,
-        backgroundColor: "#fff5ca",
-        color: "#bd8500",
-        "& svg": { fontSize: 17 },
+        background: "#f5f0df",
+        color: "#987000",
       }}
     >
-      {icon}
+      <VerifiedRounded sx={{ fontSize: 16 }} />
     </Box>
-    <Typography sx={{ color: "#555", fontSize: "0.83rem", fontWeight: 600 }}>
+    <Typography sx={{ color: "#555", fontSize: 12, fontWeight: 650 }}>
       {text}
     </Typography>
   </Stack>
@@ -857,24 +917,24 @@ const Feature = ({ icon, text }) => (
 const getProductPrice = (product) => {
   if (!product) return 0;
 
-  const originalPrice = Number(product.price) || 0;
+  const price = Number(product.price) || 0;
   const discountPrice = Number(product.discountPrice) || 0;
 
-  if (discountPrice > 0 && originalPrice > 0 && discountPrice < originalPrice) {
+  if (discountPrice > 0 && price > 0 && discountPrice < price) {
     return discountPrice;
   }
 
-  return originalPrice;
+  return price;
 };
 
 const getOriginalPrice = (product) => {
   if (!product) return 0;
 
-  const originalPrice = Number(product.price) || 0;
+  const price = Number(product.price) || 0;
   const discountPrice = Number(product.discountPrice) || 0;
 
-  if (discountPrice > 0 && originalPrice > 0 && discountPrice < originalPrice) {
-    return originalPrice;
+  if (discountPrice > 0 && price > 0 && discountPrice < price) {
+    return price;
   }
 
   return 0;
@@ -930,39 +990,75 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
 
-const primaryButtonSx = {
-  borderRadius: 2.5,
+const breadcrumbSx = {
+  display: "flex",
+  alignItems: "center",
+  gap: 0.45,
+  color: "#858585",
+  fontSize: 12,
+  fontWeight: 650,
+};
+
+const quantityControlSx = {
+  width: "100%",
   minHeight: 46,
-  px: 3,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: "1px solid #e7d8a9",
+  borderRadius: 2,
+  background: "#fff",
+};
+
+const quantityIconSx = {
+  width: 42,
+  height: 42,
+  color: "#222",
+};
+
+const quantityNumberSx = {
+  minWidth: 38,
+  textAlign: "center",
+  fontWeight: 900,
+  color: "#8d6900",
+};
+
+const primaryButtonSx = {
+  minHeight: 46,
+  px: 2.5,
+  borderRadius: 2,
   textTransform: "none",
-  fontWeight: 800,
-  fontSize: "0.9rem",
-  backgroundColor: "#111",
+  fontWeight: 850,
+  fontSize: 13,
+  background: "#171717",
   color: "#fff",
   boxShadow: "none",
+  transition: "background 180ms ease, transform 180ms ease",
   "&:hover": {
-    backgroundColor: "#252525",
+    background: "#303030",
     boxShadow: "none",
+    transform: "translateY(-1px)",
   },
   "&:disabled": {
-    backgroundColor: "#ddd",
+    background: "#d8d8d8",
     color: "#888",
   },
 };
 
 const secondaryButtonSx = {
-  borderRadius: 2.5,
   minHeight: 46,
-  px: 3,
+  px: 2.5,
+  borderRadius: 2,
   textTransform: "none",
   fontWeight: 800,
-  fontSize: "0.9rem",
-  color: "#111",
-  borderColor: "rgba(0,0,0,0.16)",
-  backgroundColor: "#fff",
+  fontSize: 13,
+  color: "#222",
+  borderColor: "#dedbd1",
+  background: "#fff",
+  transition: "background 180ms ease, border-color 180ms ease",
   "&:hover": {
-    borderColor: "#d5a000",
-    backgroundColor: "#fffaf0",
+    borderColor: "#c49a26",
+    background: "#fffcf2",
   },
   "&:disabled": {
     borderColor: "#ddd",
@@ -971,16 +1067,16 @@ const secondaryButtonSx = {
 };
 
 const textToggleSx = {
-  mt: 0.5,
+  mt: 0.25,
   p: 0,
   minWidth: 0,
   textTransform: "none",
-  color: "#a77700",
-  fontWeight: 800,
-  fontSize: "0.85rem",
+  color: "#9a740d",
+  fontWeight: 850,
+  fontSize: 12,
   "&:hover": {
-    backgroundColor: "transparent",
-    color: "#805b00",
+    background: "transparent",
+    color: "#725300",
   },
 };
 
