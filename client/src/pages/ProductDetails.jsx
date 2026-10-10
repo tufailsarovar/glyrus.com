@@ -36,7 +36,6 @@ import NotFound from "./NotFound";
 
 const MotionBox = motion(Box);
 
-
 const renderInlineFormatting = (text) => {
   const parts = String(text || "").split(/(\*\*[\s\S]+?\*\*|\*[^*]+?\*)/g);
 
@@ -130,10 +129,28 @@ const FormattedDescription = ({ description }) => {
           return (
             <Box
               key={index}
-              component="li"
-              sx={{ ml: 2, display: "list-item", listStyleType: "decimal" }}
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 1,
+                mb: 0.8,
+              }}
             >
-              {renderInlineFormatting(numberedMatch[2])}
+              <Typography
+                component="span"
+                sx={{
+                  flexShrink: 0,
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
+                  color: "inherit",
+                }}
+              >
+                {numberedMatch[1]}.
+              </Typography>
+
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                {renderInlineFormatting(numberedMatch[2])}
+              </Box>
             </Box>
           );
         }
@@ -147,7 +164,6 @@ const FormattedDescription = ({ description }) => {
     </Box>
   );
 };
-
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -204,7 +220,7 @@ const ProductDetails = () => {
         setError(
           err?.response?.data?.message ||
             err?.message ||
-            "Unable to load this product."
+            "Unable to load this product.",
         );
       } finally {
         if (mounted) setLoading(false);
@@ -225,14 +241,14 @@ const ProductDetails = () => {
 
   const productName = useMemo(
     () => product?.title || product?.name || "NFC Product",
-    [product]
+    [product],
   );
 
   const productDescription = useMemo(
     () =>
       product?.description ||
       "A premium NFC product designed to help modern businesses connect with customers more easily.",
-    [product]
+    [product],
   );
 
   const productPrice = useMemo(() => getProductPrice(product), [product]);
@@ -303,7 +319,7 @@ const ProductDetails = () => {
           ...product,
           quantity,
           customization: selectedCustomization,
-        })
+        }),
       );
 
       setAdded(true);
@@ -328,7 +344,7 @@ const ProductDetails = () => {
           ...product,
           quantity,
           customization: selectedCustomization,
-        })
+        }),
       );
 
       navigate("/cart");
@@ -453,7 +469,10 @@ const ProductDetails = () => {
         >
           <MuiLink component={Link} to="/" underline="none" sx={breadcrumbSx}>
             <HomeRounded sx={{ fontSize: 16 }} />
-            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+            <Box
+              component="span"
+              sx={{ display: { xs: "none", sm: "inline" } }}
+            >
               Home
             </Box>
           </MuiLink>
@@ -564,7 +583,9 @@ const ProductDetails = () => {
                     }}
                   />
 
-                  <Typography sx={{ color: "#555", fontSize: 12, fontWeight: 700 }}>
+                  <Typography
+                    sx={{ color: "#555", fontSize: 12, fontWeight: 700 }}
+                  >
                     {rating.toFixed(1)}
                   </Typography>
 
@@ -795,9 +816,7 @@ const ProductDetails = () => {
               fontSize: { xs: 13, sm: 15 },
               lineHeight: 1.8,
               overflowWrap: "anywhere",
-              maxHeight: detailsExpanded
-                ? "none"
-                : { xs: "8em", sm: "9em" },
+              maxHeight: detailsExpanded ? "none" : { xs: "8em", sm: "9em" },
               overflow: "hidden",
             }}
           >
@@ -1061,7 +1080,7 @@ const getDiscountPercentage = (product) => {
 
 const getMaxQuantity = (product) => {
   const stock = Number(
-    product?.stock ?? product?.quantityAvailable ?? product?.inventory
+    product?.stock ?? product?.quantityAvailable ?? product?.inventory,
   );
 
   if (Number.isFinite(stock) && stock > 0) {
@@ -1074,18 +1093,18 @@ const getMaxQuantity = (product) => {
 const hasCustomization = (product) =>
   Boolean(
     product?.isCustomizable ||
-      product?.customizable ||
-      product?.customization ||
-      (Array.isArray(product?.customizationOptions) &&
-        product.customizationOptions.length > 0)
+    product?.customizable ||
+    product?.customization ||
+    (Array.isArray(product?.customizationOptions) &&
+      product.customizationOptions.length > 0),
   );
 
 const hasVideo = (product) =>
   Boolean(
     product?.video ||
-      product?.videoUrl ||
-      product?.videoURL ||
-      product?.productVideo
+    product?.videoUrl ||
+    product?.videoURL ||
+    product?.productVideo,
   );
 
 const formatCategory = (value) =>
