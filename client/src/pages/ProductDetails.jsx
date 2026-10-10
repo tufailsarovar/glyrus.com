@@ -36,6 +36,35 @@ import NotFound from "./NotFound";
 
 const MotionBox = motion(Box);
 
+
+const renderInlineFormatting = (text) => {
+  const parts = String(text || "").split(/(\*\*[\s\S]+?\*\*|\*[^*]+?\*)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <Box
+          key={index}
+          component="strong"
+          sx={{ color: "#222", fontWeight: 800 }}
+        >
+          {part.slice(2, -2)}
+        </Box>
+      );
+    }
+
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return (
+        <Box key={index} component="em">
+          {part.slice(1, -1)}
+        </Box>
+      );
+    }
+
+    return part;
+  });
+};
+
 const FormattedDescription = ({ description }) => {
   const lines = String(description || "").split(/\r?\n/);
 
@@ -46,11 +75,12 @@ const FormattedDescription = ({ description }) => {
         fontSize: "inherit",
         lineHeight: "inherit",
         overflowWrap: "anywhere",
+        whiteSpace: "normal",
         "& p": { m: 0, mb: 1.2 },
         "& ul, & ol": { mt: 0.5, mb: 1.5, pl: 3 },
         "& li": { mb: 0.5 },
         "& strong": { color: "#222", fontWeight: 800 },
-        "& h2, & h3, & h4": {
+        "& h2, & h3": {
           color: "#222",
           fontWeight: 800,
           lineHeight: 1.4,
@@ -69,7 +99,7 @@ const FormattedDescription = ({ description }) => {
         if (text.startsWith("## ")) {
           return (
             <Typography key={index} component="h3" variant="h4">
-              {text.slice(3)}
+              {renderInlineFormatting(text.slice(3))}
             </Typography>
           );
         }
@@ -77,36 +107,47 @@ const FormattedDescription = ({ description }) => {
         if (text.startsWith("# ")) {
           return (
             <Typography key={index} component="h2" variant="h3">
-              {text.slice(2)}
+              {renderInlineFormatting(text.slice(2))}
             </Typography>
           );
         }
 
         if (/^[-*]\s+/.test(text)) {
           return (
-            <Box key={index} component="li" sx={{ ml: 2 }}>
-              {text.replace(/^[-*]\s+/, "")}
+            <Box
+              key={index}
+              component="li"
+              sx={{ ml: 2, display: "list-item", listStyleType: "disc" }}
+            >
+              {renderInlineFormatting(text.replace(/^[-*]\s+/, ""))}
             </Box>
           );
         }
 
-        if (/^\d+\.\s+/.test(text)) {
+        const numberedMatch = text.match(/^(\d+)\.\s+(.*)$/);
+
+        if (numberedMatch) {
           return (
-            <Box key={index} component="li" sx={{ ml: 2 }}>
-              {text.replace(/^\d+\.\s+/, "")}
+            <Box
+              key={index}
+              component="li"
+              sx={{ ml: 2, display: "list-item", listStyleType: "decimal" }}
+            >
+              {renderInlineFormatting(numberedMatch[2])}
             </Box>
           );
         }
 
         return (
           <Typography key={index} component="p">
-            {text}
+            {renderInlineFormatting(text)}
           </Typography>
         );
       })}
     </Box>
   );
 };
+
 
 const ProductDetails = () => {
   const { id } = useParams();
