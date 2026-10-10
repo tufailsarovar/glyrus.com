@@ -436,38 +436,14 @@ const FeaturedProducts = () => {
         ================================================= */}
 
         <MotionBox
-          initial={{
-            opacity: 0,
-
-            y: 22,
-          }}
-          whileInView={{
-            opacity: 1,
-
-            y: 0,
-          }}
-          viewport={{
-            once: true,
-
-            amount: 0.2,
-          }}
-          transition={{
-            duration: 0.55,
-
-            ease: "easeOut",
-          }}
+          initial={{ opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
           sx={{
-            mb: {
-              xs: 3.5,
-
-              sm: 4.5,
-
-              md: 5.5,
-            },
-
+            mb: { xs: 3.5, sm: 4.5, md: 5.5 },
             display: "flex",
-
-            alignItems: { xs: "center", sm: "flex-end" },
+            alignItems: { xs: "flex-end", sm: "flex-end" },
             justifyContent: "space-between",
             flexDirection: "row",
             gap: { xs: 1, sm: 2 },
@@ -478,18 +454,14 @@ const FeaturedProducts = () => {
               direction="row"
               alignItems="center"
               spacing={0.9}
-              sx={{
-                mb: 1.1,
-              }}
+              sx={{ mb: 1.1 }}
             >
               <Box
                 sx={{
                   width: 25,
-
                   height: 3,
-
+                  flexShrink: 0,
                   borderRadius: "999px",
-
                   background: "linear-gradient(90deg,#FFD000,#F0A800)",
                 }}
               />
@@ -497,17 +469,9 @@ const FeaturedProducts = () => {
               <Typography
                 sx={{
                   color: "#B17B00",
-
-                  fontSize: {
-                    xs: 10.5,
-
-                    sm: 11.5,
-                  },
-
+                  fontSize: { xs: 10.5, sm: 11.5 },
                   fontWeight: 850,
-
                   letterSpacing: "1.1px",
-
                   textTransform: "uppercase",
                 }}
               >
@@ -519,23 +483,16 @@ const FeaturedProducts = () => {
               component="h2"
               sx={{
                 color: "#111",
-
                 fontSize: {
                   xs: "1.8rem",
-
                   sm: "2.25rem",
-
                   md: "2.8rem",
                 },
-
                 lineHeight: 1.1,
-
                 letterSpacing: {
                   xs: "-1px",
-
                   md: "-1.7px",
                 },
-
                 fontWeight: 900,
               }}
             >
@@ -544,12 +501,7 @@ const FeaturedProducts = () => {
                 component="span"
                 sx={{
                   color: "#F1AE00",
-
-                  ml: {
-                    xs: 0.6,
-
-                    sm: 0.8,
-                  },
+                  ml: { xs: 0.6, sm: 0.8 },
                 }}
               >
                 connect.
@@ -559,19 +511,13 @@ const FeaturedProducts = () => {
             <Typography
               sx={{
                 mt: 1.1,
-
                 maxWidth: 570,
-
                 color: "#707070",
-
                 fontSize: {
                   xs: 13,
-
                   sm: 14,
-
                   md: 15,
                 },
-
                 lineHeight: 1.7,
               }}
             >
@@ -586,28 +532,25 @@ const FeaturedProducts = () => {
             endIcon={<ArrowForwardRounded />}
             sx={{
               flexShrink: 0,
-
-              minHeight: { xs: 34, sm: 42 },
-
-              px: { xs: 1.1, sm: 1.8 },
-
-              borderRadius: "12px",
-
+              alignSelf: "flex-end",
+              minHeight: { xs: 28, sm: 42 },
+              px: { xs: 0.8, sm: 1.8 },
+              borderRadius: "10px",
               textTransform: "none",
-
               color: "#222",
-
-              fontSize: { xs: 11, sm: 13 },
-
+              fontSize: { xs: 9, sm: 13 },
               fontWeight: 800,
-
+              whiteSpace: "nowrap",
               border: "1px solid rgba(17,17,17,0.10)",
-
               backgroundColor: "#FFF",
-
+              "& .MuiButton-endIcon": {
+                ml: { xs: 0.3, sm: 1 },
+                "& svg": {
+                  fontSize: { xs: 14, sm: 20 },
+                },
+              },
               "&:hover": {
                 borderColor: "#F2B000",
-
                 backgroundColor: "rgba(255,208,0,0.08)",
               },
             }}
@@ -623,9 +566,7 @@ const FeaturedProducts = () => {
             severity="error"
             sx={{
               mb: 3,
-
               borderRadius: "14px",
-
               fontSize: 13,
             }}
           >
@@ -1686,18 +1627,19 @@ const FeaturedProducts = () => {
                 to="/products"
                 endIcon={<ArrowForwardRounded />}
                 sx={{
-                  minHeight: { xs: 38, sm: 42 },
-                  px: { xs: 2.2, sm: 2.8 },
+                  flexShrink: 0,
+                  minHeight: { xs: 34, sm: 42 },
+                  px: { xs: 1.1, sm: 1.8 },
                   borderRadius: "12px",
                   textTransform: "none",
-                  color: "#111",
-                  fontSize: { xs: 11.5, sm: 13 },
+                  color: "#222",
+                  fontSize: { xs: 11, sm: 13 },
                   fontWeight: 800,
-                  backgroundColor: "#FFD000",
-                  boxShadow: "0 6px 18px rgba(242,172,0,0.18)",
+                  border: "1px solid rgba(17,17,17,0.10)",
+                  backgroundColor: "#FFF",
                   "&:hover": {
-                    backgroundColor: "#FFDF32",
-                    boxShadow: "0 8px 22px rgba(242,172,0,0.25)",
+                    borderColor: "#F2B000",
+                    backgroundColor: "rgba(255,208,0,0.08)",
                   },
                 }}
               >
