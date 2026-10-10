@@ -33,20 +33,13 @@ const getProductPrice = (product) =>
       0,
   );
 
-
 const getImageUrl = (value) => {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }
 
   if (value && typeof value === "object") {
-    return (
-      value.url ||
-      value.secure_url ||
-      value.src ||
-      value.imageUrl ||
-      ""
-    );
+    return value.url || value.secure_url || value.src || value.imageUrl || "";
   }
 
   return "";
@@ -101,7 +94,6 @@ const createCartItem = (product, quantity, customization) => {
   };
 };
 
-
 const getCustomizationKey = (customization) => {
   if (!customization) return "";
 
@@ -136,11 +128,15 @@ export const CartProvider = ({ children }) => {
       const parsedCart = JSON.parse(storedCart);
 
       if (Array.isArray(parsedCart)) {
-        return parsedCart;
+        return parsedCart.map((item) =>
+          createCartItem(item, item?.quantity, item?.customization),
+        );
       }
 
       if (Array.isArray(parsedCart?.items)) {
-        return parsedCart.items;
+        return parsedCart.items.map((item) =>
+          createCartItem(item, item?.quantity, item?.customization),
+        );
       }
 
       return [];

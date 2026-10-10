@@ -28,6 +28,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
     "NFC Product";
 
  
+
 const getImageUrl = (value) => {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
@@ -61,6 +62,7 @@ const image =
   ]
     .map(getImageUrl)
     .find(Boolean) || "/placeholder-product.png";
+
 
 
   const price = Number(item.price) || Number(item.product?.price) || 0;

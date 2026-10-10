@@ -95,6 +95,7 @@ const getItemName = (item) =>
   item?.name || item?.title || item?.product?.name || "Glyrus Product";
 
 
+
 const getImageUrl = (value) => {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
@@ -128,6 +129,8 @@ const getItemImage = (item) =>
   ]
     .map(getImageUrl)
     .find(Boolean) || "";
+
+
 
 
 const getItemId = (item) =>
