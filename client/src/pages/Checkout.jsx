@@ -94,12 +94,41 @@ const getItemQuantity = (item) =>
 const getItemName = (item) =>
   item?.name || item?.title || item?.product?.name || "Glyrus Product";
 
+
+const getImageUrl = (value) => {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (value && typeof value === "object") {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      ""
+    );
+  }
+
+  return "";
+};
+
 const getItemImage = (item) =>
-  item?.image ||
-  item?.imageUrl ||
-  item?.thumbnail ||
-  item?.product?.image ||
-  "";
+  [
+    item?.image,
+    item?.imageUrl,
+    item?.thumbnail,
+    item?.coverUrl,
+    item?.coverImage,
+    item?.images?.[0],
+    item?.product?.image,
+    item?.product?.imageUrl,
+    item?.product?.thumbnail,
+    item?.product?.images?.[0],
+  ]
+    .map(getImageUrl)
+    .find(Boolean) || "";
+
 
 const getItemId = (item) =>
   item?.productId ||

@@ -33,8 +33,53 @@ const getProductPrice = (product) =>
       0,
   );
 
+
+const getImageUrl = (value) => {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (value && typeof value === "object") {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      ""
+    );
+  }
+
+  return "";
+};
+
+const getProductImage = (product) => {
+  const candidates = [
+    product?.image,
+    product?.imageUrl,
+    product?.thumbnail,
+    product?.coverUrl,
+    product?.coverImage,
+    product?.images?.[0],
+    product?.product?.image,
+    product?.product?.imageUrl,
+    product?.product?.thumbnail,
+    product?.product?.images?.[0],
+  ];
+
+  for (const candidate of candidates) {
+    const imageUrl = getImageUrl(candidate);
+
+    if (imageUrl) {
+      return imageUrl;
+    }
+  }
+
+  return "";
+};
+
 const createCartItem = (product, quantity, customization) => {
   const productId = getProductId(product);
+  const image = getProductImage(product);
 
   return {
     ...product,
@@ -46,13 +91,16 @@ const createCartItem = (product, quantity, customization) => {
     name: product?.name || product?.title || "Glyrus Product",
     title: product?.title || product?.name || "Glyrus Product",
 
+    image,
+    imageUrl: product?.imageUrl || image,
+    thumbnail: product?.thumbnail || image,
+
     price: getProductPrice(product),
-
     quantity: normalizeQuantity(quantity),
-
     customization: customization || product?.customization || null,
   };
 };
+
 
 const getCustomizationKey = (customization) => {
   if (!customization) return "";

@@ -5,21 +5,12 @@ import {
   DeleteOutlineRounded,
   RemoveRounded,
 } from "@mui/icons-material";
-import {
-  Box,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, IconButton, Stack, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 
 const MotionBox = motion(Box);
 
-const CartItem = ({
- item,
-  onQuantityChange,
-  onRemove,
-}) => {
+const CartItem = ({ item, onQuantityChange, onRemove }) => {
   if (!item) return null;
 
   const productId =
@@ -36,60 +27,73 @@ const CartItem = ({
     item.product?.name ||
     "NFC Product";
 
-  const image =
-  (typeof item?.image === "string" && item.image) ||
-  (typeof item?.thumbnail === "string" && item.thumbnail) ||
-  item?.images?.[0]?.url ||
-  item?.images?.[0]?.secure_url ||
-  item?.product?.images?.[0]?.url ||
-  item?.product?.images?.[0]?.secure_url ||
-  (typeof item?.product?.image === "string" &&
-    item.product.image) ||
-  (typeof item?.product?.thumbnail === "string" &&
-    item.product.thumbnail) ||
-  "/placeholder-product.png";
+ 
+const getImageUrl = (value) => {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
 
-  const price =
-    Number(item.price) ||
-    Number(item.product?.price) ||
-    0;
-
-  const quantity = Math.max(
-    1,
-    Number(item.quantity) || 1
-  );
-
-  const customization =
-    item.customization || {};
-
-  const hasCustomization =
-    Object.values(customization).some(
-      (value) =>
-        value !== undefined &&
-        value !== null &&
-        String(value).trim() !== ""
+  if (value && typeof value === "object") {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      ""
     );
+  }
+
+  return "";
+};
+
+const image =
+  [
+    item?.image,
+    item?.imageUrl,
+    item?.thumbnail,
+    item?.coverUrl,
+    item?.coverImage,
+    item?.images?.[0],
+    item?.product?.image,
+    item?.product?.imageUrl,
+    item?.product?.thumbnail,
+    item?.product?.images?.[0],
+  ]
+    .map(getImageUrl)
+    .find(Boolean) || "/placeholder-product.png";
+
+
+  const price = Number(item.price) || Number(item.product?.price) || 0;
+
+  const quantity = Math.max(1, Number(item.quantity) || 1);
+
+  const customization = item.customization || {};
+
+  const hasCustomization = Object.values(customization).some(
+    (value) =>
+      value !== undefined && value !== null && String(value).trim() !== "",
+  );
 
   const subtotal = price * quantity;
 
   const handleIncrease = () => {
-  if (typeof onQuantityChange === "function") {
-    onQuantityChange(quantity + 1);
-  }
-};
-
-const handleDecrease = () => {
-  if (quantity <= 1) {
-    if (typeof onRemove === "function") {
-      onRemove();
+    if (typeof onQuantityChange === "function") {
+      onQuantityChange(quantity + 1);
     }
-    return;
-  }
+  };
 
-  if (typeof onQuantityChange === "function") {
-    onQuantityChange(quantity - 1);
-  }
-};
+  const handleDecrease = () => {
+    if (quantity <= 1) {
+      if (typeof onRemove === "function") {
+        onRemove();
+      }
+      return;
+    }
+
+    if (typeof onQuantityChange === "function") {
+      onQuantityChange(quantity - 1);
+    }
+  };
 
   const handleRemove = () => {
     if (typeof onRemove === "function") {
@@ -148,11 +152,9 @@ const handleDecrease = () => {
             sm: "18px",
             md: "20px",
           },
-          border:
-            "1px solid rgba(17,17,17,0.07)",
+          border: "1px solid rgba(17,17,17,0.07)",
           backgroundColor: "#FFFFFF",
-          boxShadow:
-            "0 7px 25px rgba(17,17,17,0.045)",
+          boxShadow: "0 7px 25px rgba(17,17,17,0.045)",
         }}
       >
         {/* Product Image */}
@@ -175,8 +177,7 @@ const handleDecrease = () => {
               sm: "14px",
             },
             backgroundColor: "#F5F5F5",
-            border:
-              "1px solid rgba(17,17,17,0.06)",
+            border: "1px solid rgba(17,17,17,0.06)",
           }}
         >
           <Box
@@ -185,8 +186,7 @@ const handleDecrease = () => {
             alt={title}
             loading="lazy"
             onError={(event) => {
-              event.currentTarget.src =
-                "/placeholder-product.png";
+              event.currentTarget.src = "/placeholder-product.png";
             }}
             sx={{
               width: "100%",
@@ -302,8 +302,7 @@ const handleDecrease = () => {
               direction="row"
               alignItems="center"
               sx={{
-                border:
-                  "1px solid rgba(17,17,17,0.10)",
+                border: "1px solid rgba(17,17,17,0.10)",
                 borderRadius: {
                   xs: "9px",
                   sm: "10px",
@@ -393,8 +392,7 @@ const handleDecrease = () => {
             borderRadius: "9px",
             "&:hover": {
               color: "#D32F2F",
-              backgroundColor:
-                "rgba(211,47,47,0.06)",
+              backgroundColor: "rgba(211,47,47,0.06)",
             },
           }}
         >
@@ -424,8 +422,7 @@ const quantityButtonStyles = {
   borderRadius: 0,
   color: "#222222",
   "&:hover": {
-    backgroundColor:
-      "rgba(255,208,0,0.12)",
+    backgroundColor: "rgba(255,208,0,0.12)",
   },
   "& svg": {
     fontSize: {
