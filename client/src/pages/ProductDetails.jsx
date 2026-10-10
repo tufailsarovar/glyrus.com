@@ -36,6 +36,78 @@ import NotFound from "./NotFound";
 
 const MotionBox = motion(Box);
 
+const FormattedDescription = ({ description }) => {
+  const lines = String(description || "").split(/\r?\n/);
+
+  return (
+    <Box
+      sx={{
+        color: "#666",
+        fontSize: "inherit",
+        lineHeight: "inherit",
+        overflowWrap: "anywhere",
+        "& p": { m: 0, mb: 1.2 },
+        "& ul, & ol": { mt: 0.5, mb: 1.5, pl: 3 },
+        "& li": { mb: 0.5 },
+        "& strong": { color: "#222", fontWeight: 800 },
+        "& h2, & h3, & h4": {
+          color: "#222",
+          fontWeight: 800,
+          lineHeight: 1.4,
+          mt: 2,
+          mb: 1,
+        },
+      }}
+    >
+      {lines.map((line, index) => {
+        const text = line.trim();
+
+        if (!text) {
+          return <Box key={index} sx={{ height: 6 }} />;
+        }
+
+        if (text.startsWith("## ")) {
+          return (
+            <Typography key={index} component="h3" variant="h4">
+              {text.slice(3)}
+            </Typography>
+          );
+        }
+
+        if (text.startsWith("# ")) {
+          return (
+            <Typography key={index} component="h2" variant="h3">
+              {text.slice(2)}
+            </Typography>
+          );
+        }
+
+        if (/^[-*]\s+/.test(text)) {
+          return (
+            <Box key={index} component="li" sx={{ ml: 2 }}>
+              {text.replace(/^[-*]\s+/, "")}
+            </Box>
+          );
+        }
+
+        if (/^\d+\.\s+/.test(text)) {
+          return (
+            <Box key={index} component="li" sx={{ ml: 2 }}>
+              {text.replace(/^\d+\.\s+/, "")}
+            </Box>
+          );
+        }
+
+        return (
+          <Typography key={index} component="p">
+            {text}
+          </Typography>
+        );
+      })}
+    </Box>
+  );
+};
+
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -91,7 +163,7 @@ const ProductDetails = () => {
         setError(
           err?.response?.data?.message ||
             err?.message ||
-            "Unable to load this product.",
+            "Unable to load this product."
         );
       } finally {
         if (mounted) setLoading(false);
@@ -112,14 +184,14 @@ const ProductDetails = () => {
 
   const productName = useMemo(
     () => product?.title || product?.name || "NFC Product",
-    [product],
+    [product]
   );
 
   const productDescription = useMemo(
     () =>
       product?.description ||
       "A premium NFC product designed to help modern businesses connect with customers more easily.",
-    [product],
+    [product]
   );
 
   const productPrice = useMemo(() => getProductPrice(product), [product]);
@@ -190,7 +262,7 @@ const ProductDetails = () => {
           ...product,
           quantity,
           customization: selectedCustomization,
-        }),
+        })
       );
 
       setAdded(true);
@@ -215,7 +287,7 @@ const ProductDetails = () => {
           ...product,
           quantity,
           customization: selectedCustomization,
-        }),
+        })
       );
 
       navigate("/cart");
@@ -340,10 +412,7 @@ const ProductDetails = () => {
         >
           <MuiLink component={Link} to="/" underline="none" sx={breadcrumbSx}>
             <HomeRounded sx={{ fontSize: 16 }} />
-            <Box
-              component="span"
-              sx={{ display: { xs: "none", sm: "inline" } }}
-            >
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
               Home
             </Box>
           </MuiLink>
@@ -453,11 +522,11 @@ const ProductDetails = () => {
                       "& .MuiRating-iconEmpty": { color: "#e9e2d0" },
                     }}
                   />
-                  <Typography
-                    sx={{ color: "#555", fontSize: 12, fontWeight: 700 }}
-                  >
+
+                  <Typography sx={{ color: "#555", fontSize: 12, fontWeight: 700 }}>
                     {rating.toFixed(1)}
                   </Typography>
+
                   {reviewCount > 0 && (
                     <Typography sx={{ color: "#888", fontSize: 12 }}>
                       ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
@@ -468,22 +537,20 @@ const ProductDetails = () => {
 
               {/* Short description */}
               <Box>
-                <Typography
+                <Box
                   sx={{
                     color: "#666",
                     fontSize: { xs: 13, sm: 15 },
                     lineHeight: { xs: 1.7, sm: 1.8 },
                     overflowWrap: "anywhere",
-                    ...(!descriptionExpanded && {
-                      display: "-webkit-box",
-                      WebkitLineClamp: { xs: 3, sm: 4 },
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }),
+                    maxHeight: descriptionExpanded
+                      ? "none"
+                      : { xs: "6.5em", sm: "7.2em" },
+                    overflow: "hidden",
                   }}
                 >
-                  {productDescription}
-                </Typography>
+                  <FormattedDescription description={productDescription} />
+                </Box>
 
                 {String(productDescription).length > 150 && (
                   <Button
@@ -614,12 +681,14 @@ const ProductDetails = () => {
                   <LocalShippingOutlined
                     sx={{ color: "#a77700", fontSize: 21, mt: 0.1 }}
                   />
+
                   <Box sx={{ minWidth: 0 }}>
                     <Typography
                       sx={{ fontSize: 12, fontWeight: 850, color: "#44350d" }}
                     >
                       Delivery & order support
                     </Typography>
+
                     <Typography
                       sx={{
                         mt: 0.35,
@@ -679,22 +748,20 @@ const ProductDetails = () => {
             Product details
           </Typography>
 
-          <Typography
+          <Box
             sx={{
               color: "#666",
               fontSize: { xs: 13, sm: 15 },
               lineHeight: 1.8,
               overflowWrap: "anywhere",
-              ...(!detailsExpanded && {
-                display: "-webkit-box",
-                WebkitLineClamp: { xs: 4, sm: 5 },
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }),
+              maxHeight: detailsExpanded
+                ? "none"
+                : { xs: "8em", sm: "9em" },
+              overflow: "hidden",
             }}
           >
-            {productDescription}
-          </Typography>
+            <FormattedDescription description={productDescription} />
+          </Box>
 
           {String(productDescription).length > 180 && (
             <Button
@@ -740,6 +807,7 @@ const ProductDetails = () => {
                     <CheckCircleRounded
                       sx={{ color: "#c59617", fontSize: 18, flexShrink: 0 }}
                     />
+
                     <Typography
                       sx={{
                         minWidth: 0,
@@ -908,6 +976,7 @@ const Feature = ({ text }) => (
     >
       <VerifiedRounded sx={{ fontSize: 16 }} />
     </Box>
+
     <Typography sx={{ color: "#555", fontSize: 12, fontWeight: 650 }}>
       {text}
     </Typography>
@@ -951,7 +1020,7 @@ const getDiscountPercentage = (product) => {
 
 const getMaxQuantity = (product) => {
   const stock = Number(
-    product?.stock ?? product?.quantityAvailable ?? product?.inventory,
+    product?.stock ?? product?.quantityAvailable ?? product?.inventory
   );
 
   if (Number.isFinite(stock) && stock > 0) {
@@ -964,18 +1033,18 @@ const getMaxQuantity = (product) => {
 const hasCustomization = (product) =>
   Boolean(
     product?.isCustomizable ||
-    product?.customizable ||
-    product?.customization ||
-    (Array.isArray(product?.customizationOptions) &&
-      product.customizationOptions.length > 0),
+      product?.customizable ||
+      product?.customization ||
+      (Array.isArray(product?.customizationOptions) &&
+        product.customizationOptions.length > 0)
   );
 
 const hasVideo = (product) =>
   Boolean(
     product?.video ||
-    product?.videoUrl ||
-    product?.videoURL ||
-    product?.productVideo,
+      product?.videoUrl ||
+      product?.videoURL ||
+      product?.productVideo
   );
 
 const formatCategory = (value) =>
