@@ -2,9 +2,7 @@
 
 import axios from "axios";
 
-const API_URL = (
-  import.meta.env.VITE_API_URL || ""
-)
+const API_URL = (import.meta.env.VITE_API_URL || "")
   .replace(/\/+$/, "")
   .replace(/\/api$/, "");
 
@@ -28,7 +26,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -44,7 +42,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // ================= PUBLIC =================
@@ -52,38 +50,27 @@ api.interceptors.response.use(
 export const getProducts = (params = {}) =>
   api.get("/api/products", { params });
 
-export const getProduct = (id) =>
-  api.get(`/api/products/${id}`);
+export const getProduct = (id) => api.get(`/api/products/${id}`);
 
-export const createOrder = (data) =>
-  api.post("/api/orders", data);
+export const createOrder = (data) => api.post("/api/orders", data);
 
 export const createPaymentOrder = (data) =>
   api.post("/api/payments/create-order", data);
 
-export const verifyPayment = (data) =>
-  api.post("/api/payments/verify", data);
+export const verifyPayment = (data) => api.post("/api/payments/verify", data);
 
 export const getTracking = (trackingNumber) =>
-  api.get(
-    `/api/tracking/${encodeURIComponent(
-      String(trackingNumber).trim()
-    )}`
-  );
+  api.get(`/api/tracking/${encodeURIComponent(String(trackingNumber).trim())}`);
 
-export const submitRequest = (data) =>
-  api.post("/api/requests", data);
+export const submitRequest = (data) => api.post("/api/requests", data);
 
-export const submitContact = (data) =>
-  api.post("/api/contact", data);
+export const submitContact = (data) => api.post("/api/contact", data);
 
 // ================= ADMIN =================
 
-export const adminLogin = (data) =>
-  api.post("/api/admin/auth/login", data);
+export const adminLogin = (data) => api.post("/api/admin/auth/login", data);
 
-export const getAdminDashboard = () =>
-  api.get("/api/admin/dashboard");
+export const getAdminDashboard = () => api.get("/api/admin/dashboard");
 
 export const getAdminProducts = (params = {}) =>
   api.get("/api/admin/products", { params });
@@ -100,8 +87,7 @@ export const deleteAdminProduct = (id) =>
 export const getAdminOrders = (params = {}) =>
   api.get("/api/admin/orders", { params });
 
-export const getAdminOrder = (id) =>
-  api.get(`/api/admin/orders/${id}`);
+export const getAdminOrder = (id) => api.get(`/api/admin/orders/${id}`);
 
 export const updateAdminOrder = (id, data) =>
   api.put(`/api/admin/orders/${id}`, data);
@@ -121,8 +107,7 @@ export const getAdminMessages = (params = {}) =>
 export const updateAdminMessage = (id, data) =>
   api.put(`/api/admin/messages/${id}`, data);
 
-export const getAdminSettings = () =>
-  api.get("/api/admin/settings");
+export const getAdminSettings = () => api.get("/api/admin/settings");
 
 export const updateAdminSettings = (data) =>
   api.put("/api/admin/settings", data);

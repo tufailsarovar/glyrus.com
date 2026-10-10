@@ -544,20 +544,19 @@ const ProductCard = ({ product, onAddToCart }) => {
             <Typography
               sx={{
                 color: "#111",
-
                 fontSize: {
-                  xs: 22,
-
-                  sm: 25,
-
+                  xs: 18,
+                  sm: 23,
                   md: 27,
                 },
-
-                lineHeight: 1,
-
+                lineHeight: 1.1,
                 fontWeight: 950,
-
-                letterSpacing: "-.8px",
+                letterSpacing: {
+                  xs: "-0.5px",
+                  sm: "-0.8px",
+                },
+                whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
             >
               ₹{price.toLocaleString("en-IN")}

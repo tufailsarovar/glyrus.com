@@ -28,7 +28,6 @@ import {
 import { getProducts } from "../../services/api";
 import { useCart } from "../../hooks/useCart";
 
-
 const MotionBox = motion(Box);
 
 const FeaturedProducts = () => {
@@ -541,9 +540,9 @@ const FeaturedProducts = () => {
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "repeat(2,minmax(0,1fr))",
-                sm: "repeat(2,minmax(0,1fr))",
-                md: "repeat(3,minmax(0,1fr))",
+                xs: "minmax(0, 1fr)",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: "repeat(3, minmax(0, 1fr))",
               },
               gap: {
                 xs: 1.2,
@@ -1120,13 +1119,18 @@ const FeaturedProducts = () => {
                           sx={{
                             color: "#111",
                             fontSize: {
-                              xs: 22,
-                              sm: 25,
+                              xs: 20,
+                              sm: 24,
                               md: 27,
                             },
-                            lineHeight: 1,
+                            lineHeight: 1.1,
                             fontWeight: 950,
-                            letterSpacing: "-.8px",
+                            letterSpacing: {
+                              xs: "-0.5px",
+                              sm: "-0.8px",
+                            },
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
                           }}
                         >
                           {formatCurrency(price)}

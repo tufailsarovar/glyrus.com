@@ -1,4 +1,3 @@
-// Glyrus — ProductGrid.jsx
 import React from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import ProductCard from "./ProductCard";
@@ -23,9 +22,7 @@ const ProductGrid = ({
         <CircularProgress
           size={34}
           thickness={4}
-          sx={{
-            color: "#EFB000",
-          }}
+          sx={{ color: "#EFB000" }}
         />
       </Box>
     );
@@ -45,11 +42,8 @@ const ProductGrid = ({
       >
         <Typography
           sx={{
-            color: "#777777",
-            fontSize: {
-              xs: 13,
-              sm: 14,
-            },
+            color: "#777",
+            fontSize: { xs: 13, sm: 14 },
           }}
         >
           {error}
@@ -68,10 +62,7 @@ const ProductGrid = ({
           justifyContent: "center",
           textAlign: "center",
           px: 2,
-          borderRadius: {
-            xs: "16px",
-            sm: "20px",
-          },
+          borderRadius: { xs: "16px", sm: "20px" },
           border: "1px dashed rgba(17,17,17,0.12)",
           backgroundColor: "#FCFCFC",
         }}
@@ -79,11 +70,8 @@ const ProductGrid = ({
         <Box>
           <Typography
             sx={{
-              color: "#222222",
-              fontSize: {
-                xs: 15,
-                sm: 17,
-              },
+              color: "#222",
+              fontSize: { xs: 15, sm: 17 },
               fontWeight: 800,
             }}
           >
@@ -93,11 +81,8 @@ const ProductGrid = ({
           <Typography
             sx={{
               mt: 0.5,
-              color: "#888888",
-              fontSize: {
-                xs: 11.5,
-                sm: 12.5,
-              },
+              color: "#888",
+              fontSize: { xs: 11.5, sm: 12.5 },
             }}
           >
             Try another category or check back later.
@@ -111,29 +96,31 @@ const ProductGrid = ({
     <Box
       sx={{
         width: "100%",
+        minWidth: 0,
         display: "grid",
         gridTemplateColumns: {
-          xs: "repeat(2, minmax(0, 1fr))",
+          xs: "minmax(0, 1fr)",
           sm: "repeat(2, minmax(0, 1fr))",
           md: "repeat(3, minmax(0, 1fr))",
-          lg: "repeat(4, minmax(0, 1fr))",
+          lg: "repeat(3, minmax(0, 1fr))",
+          xl: "repeat(4, minmax(0, 1fr))",
         },
         gap: {
-          xs: 1.25,
+          xs: 1.8,
           sm: 2,
           md: 2.5,
           lg: 3,
         },
         alignItems: "stretch",
+        "& > *": {
+          minWidth: 0,
+          width: "100%",
+        },
       }}
     >
       {products.map((product, index) => (
         <ProductCard
-          key={
-            product?._id ||
-            product?.id ||
-            `product-${index}`
-          }
+          key={product?._id || product?.id || `product-${index}`}
           product={product}
           onAddToCart={onAddToCart}
         />
