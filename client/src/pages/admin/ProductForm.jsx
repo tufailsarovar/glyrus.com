@@ -78,48 +78,44 @@ const customizationTypes = [
 ];
 
 const getProductData = (data) =>
-  data?.product ||
-  data?.data?.product ||
-  data?.data ||
-  data;
+  data?.product || data?.data?.product || data?.data || data;
 
 const getImageUrl = (image) => {
   if (!image) return "";
 
   if (typeof image === "string") return image;
 
-  return (
-    image?.url ||
-    image?.secure_url ||
-    image?.src ||
-    image?.path ||
-    ""
-  );
+  return image?.url || image?.secure_url || image?.src || image?.path || "";
 };
 
 const getImages = (product) => {
-  const images =
-    product?.images ||
-    product?.productImages ||
-    [];
+  const images = product?.images || product?.productImages || [];
 
   if (Array.isArray(images)) {
     return images
-      .map(getImageUrl)
-      .filter(Boolean);
+      .map((image) => {
+        if (typeof image === "string") {
+          return { url: image, publicId: "" };
+        }
+
+        return {
+          url:
+            image?.url || image?.secure_url || image?.src || image?.path || "",
+          publicId: image?.publicId || image?.public_id || "",
+        };
+      })
+      .filter((image) => image.url);
   }
 
   if (typeof images === "string" && images.trim()) {
-    return [images.trim()];
+    return [{ url: images.trim(), publicId: "" }];
   }
 
-  const fallback = getImageUrl(
-    product?.image ||
-      product?.imageUrl ||
-      product?.thumbnail
-  );
+  const fallback = product?.image || product?.imageUrl || product?.thumbnail;
 
-  return fallback ? [fallback] : [];
+  const url = getImageUrl(fallback);
+
+  return url ? [{ url, publicId: "" }] : [];
 };
 
 const ProductForm = () => {
@@ -131,6 +127,7 @@ const ProductForm = () => {
 
   const [form, setForm] = useState(initialForm);
   const [existingImages, setExistingImages] = useState([]);
+  const [removedImageIds, setRemovedImageIds] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
 
@@ -143,7 +140,7 @@ const ProductForm = () => {
 
   const allImages = useMemo(
     () => [...existingImages, ...previewUrls],
-    [existingImages, previewUrls]
+    [existingImages, previewUrls],
   );
 
   useEffect(() => {
@@ -165,9 +162,7 @@ const ProductForm = () => {
         setLoading(true);
         setError("");
 
-        const response = await api.get(
-          `/api/products/${id}`
-        );
+        const response = await api.get(`/api/products/${id}`);
 
         const product = getProductData(response?.data);
 
@@ -180,64 +175,34 @@ const ProductForm = () => {
         setExistingImages(productImages);
 
         setForm({
-          name:
-            product?.name ||
-            product?.title ||
-            "",
-          title:
-            product?.title ||
-            product?.name ||
-            "",
-          category:
-            product?.category ||
-            "NFC Cards",
-          description:
-            product?.description || "",
-          price:
-            product?.price ??
-            "",
-          discountPrice:
-            product?.discountPrice ??
-            product?.salePrice ??
-            "",
-          stock:
-            product?.stock ??
-            product?.inventory ??
-            "",
-          sku:
-            product?.sku || "",
+          name: product?.name || product?.title || "",
+          title: product?.title || product?.name || "",
+          category: product?.category || "NFC Cards",
+          description: product?.description || "",
+          price: product?.price ?? "",
+          discountPrice: product?.discountPrice ?? product?.salePrice ?? "",
+          stock: product?.stock ?? product?.inventory ?? "",
+          sku: product?.sku || "",
           images: productImages,
-          video:
-            product?.video ||
-            product?.videoUrl ||
-            "",
+          video: product?.video || product?.videoUrl || "",
           isActive:
-            typeof product?.isActive ===
-            "boolean"
+            typeof product?.isActive === "boolean"
               ? product.isActive
-              : typeof product?.active ===
-                "boolean"
-              ? product.active
-              : true,
-          isFeatured:
-            Boolean(product?.isFeatured),
-          customizationAvailable:
-            Boolean(
-              product?.customizationAvailable
-            ),
-          customizationOptions:
-            Array.isArray(
-              product?.customizationOptions
-            )
-              ? product.customizationOptions
-              : [],
+              : typeof product?.active === "boolean"
+                ? product.active
+                : true,
+          isFeatured: Boolean(product?.isFeatured),
+          customizationAvailable: Boolean(product?.customizationAvailable),
+          customizationOptions: Array.isArray(product?.customizationOptions)
+            ? product.customizationOptions
+            : [],
         });
       } catch (err) {
         setError(
           err?.response?.data?.message ||
             err?.response?.data?.error ||
             err?.message ||
-            "Unable to load product."
+            "Unable to load product.",
         );
       } finally {
         setLoading(false);
@@ -280,26 +245,21 @@ const ProductForm = () => {
 
   const handleCustomizationChange = (option) => {
     setForm((previous) => {
-      const current =
-        previous.customizationOptions || [];
+      const current = previous.customizationOptions || [];
 
       const exists = current.includes(option);
 
       return {
         ...previous,
         customizationOptions: exists
-          ? current.filter(
-              (item) => item !== option
-            )
+          ? current.filter((item) => item !== option)
           : [...current, option],
       };
     });
   };
 
   const handleFileChange = (event) => {
-    const files = Array.from(
-      event.target.files || []
-    );
+    const files = Array.from(event.target.files || []);
 
     if (!files.length) return;
 
@@ -311,33 +271,33 @@ const ProductForm = () => {
     });
 
     if (validFiles.length !== files.length) {
-      setError(
-        "Only image files up to 5MB each can be uploaded."
-      );
+      setError("Only image files up to 5MB each can be uploaded.");
     } else {
       setError("");
     }
 
-    const urls = validFiles.map((file) =>
-      URL.createObjectURL(file)
-    );
+    const urls = validFiles.map((file) => URL.createObjectURL(file));
 
-    setSelectedFiles((previous) => [
-      ...previous,
-      ...validFiles,
-    ]);
+    setSelectedFiles((previous) => [...previous, ...validFiles]);
 
-    setPreviewUrls((previous) => [
-      ...previous,
-      ...urls,
-    ]);
+    setPreviewUrls((previous) => [...previous, ...urls]);
 
     event.target.value = "";
   };
 
   const removeExistingImage = (index) => {
+    const image = existingImages[index];
+
+    if (image?.publicId) {
+      setRemovedImageIds((previous) =>
+        previous.includes(image.publicId)
+          ? previous
+          : [...previous, image.publicId],
+      );
+    }
+
     setExistingImages((previous) =>
-      previous.filter((_, imageIndex) => imageIndex !== index)
+      previous.filter((_, imageIndex) => imageIndex !== index),
     );
   };
 
@@ -349,106 +309,62 @@ const ProductForm = () => {
     }
 
     setPreviewUrls((previous) =>
-      previous.filter((_, imageIndex) => imageIndex !== index)
+      previous.filter((_, imageIndex) => imageIndex !== index),
     );
 
     setSelectedFiles((previous) =>
-      previous.filter((_, fileIndex) => fileIndex !== index)
+      previous.filter((_, fileIndex) => fileIndex !== index),
     );
   };
 
   const buildPayload = () => {
     const payload = new FormData();
 
-    payload.append(
-      "name",
-      form.name.trim()
-    );
+    payload.append("name", form.name.trim());
 
-    payload.append(
-      "title",
-      (form.title || form.name).trim()
-    );
+    payload.append("title", (form.title || form.name).trim());
 
-    payload.append(
-      "category",
-      form.category
-    );
+    payload.append("category", form.category);
 
-    payload.append(
-      "description",
-      form.description.trim()
-    );
+    payload.append("description", form.description.trim());
 
-    payload.append(
-      "price",
-      String(Number(form.price))
-    );
+    payload.append("price", String(Number(form.price)));
 
     if (
       form.discountPrice !== "" &&
       form.discountPrice !== null &&
       form.discountPrice !== undefined
     ) {
-      payload.append(
-        "discountPrice",
-        String(Number(form.discountPrice))
-      );
+      payload.append("discountPrice", String(Number(form.discountPrice)));
     }
 
-    payload.append(
-      "stock",
-      String(
-        form.stock === ""
-          ? 0
-          : Number(form.stock)
-      )
-    );
+    payload.append("stock", String(form.stock === "" ? 0 : Number(form.stock)));
 
     if (form.sku.trim()) {
-      payload.append(
-        "sku",
-        form.sku.trim()
-      );
+      payload.append("sku", form.sku.trim());
     }
 
     if (form.video.trim()) {
-      payload.append(
-        "video",
-        form.video.trim()
-      );
+      payload.append("video", form.video.trim());
     }
 
-    payload.append(
-      "isActive",
-      String(form.isActive)
-    );
+    payload.append("isActive", String(form.isActive));
 
-    payload.append(
-      "isFeatured",
-      String(form.isFeatured)
-    );
+    payload.append("isFeatured", String(form.isFeatured));
 
     payload.append(
       "customizationAvailable",
-      String(
-        form.customizationAvailable
-      )
+      String(form.customizationAvailable),
     );
 
     payload.append(
       "customizationOptions",
       JSON.stringify(
-        form.customizationAvailable
-          ? form.customizationOptions
-          : []
-      )
+        form.customizationAvailable ? form.customizationOptions : [],
+      ),
     );
 
-    payload.append(
-      "existingImages",
-      JSON.stringify(existingImages)
-    );
+    payload.append("removeImageIds", JSON.stringify(removedImageIds));
 
     selectedFiles.forEach((file) => {
       payload.append("images", file);
@@ -464,35 +380,25 @@ const ProductForm = () => {
 
     if (Object.keys(validation).length) {
       setFieldErrors(validation);
-      setError(
-        "Please correct the highlighted fields."
-      );
+      setError("Please correct the highlighted fields.");
       return;
     }
 
     if (
       form.discountPrice !== "" &&
-      Number(form.discountPrice) >
-        Number(form.price)
+      Number(form.discountPrice) > Number(form.price)
     ) {
       setFieldErrors((previous) => ({
         ...previous,
         discountPrice:
           "Discount price cannot be higher than the original price.",
       }));
-      setError(
-        "Please correct the highlighted fields."
-      );
+      setError("Please correct the highlighted fields.");
       return;
     }
 
-    if (
-      form.customizationAvailable &&
-      !form.customizationOptions.length
-    ) {
-      setError(
-        "Select at least one customization option."
-      );
+    if (form.customizationAvailable && !form.customizationOptions.length) {
+      setError("Select at least one customization option.");
       return;
     }
 
@@ -506,38 +412,27 @@ const ProductForm = () => {
       let response;
 
       if (isEdit) {
-        response = await api.put(
-          `/api/admin/products/${id}`,
-          payload,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        response = await api.put(`/api/admin/products/${id}`, payload, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       } else {
-        response = await api.post(
-          "/api/admin/products",
-          payload,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        response = await api.post("/api/admin/products", payload, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       }
 
       if (response?.data?.success === false) {
-        throw new Error(
-          response?.data?.message ||
-            "Unable to save product."
-        );
+        throw new Error(response?.data?.message || "Unable to save product.");
       }
 
       setSuccess(
         isEdit
           ? "Product updated successfully."
-          : "Product created successfully."
+          : "Product created successfully.",
       );
 
       setTimeout(() => {
@@ -548,7 +443,7 @@ const ProductForm = () => {
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           err?.message ||
-          "Unable to save the product."
+          "Unable to save the product.",
       );
     } finally {
       setSaving(false);
@@ -564,11 +459,7 @@ const ProductForm = () => {
           placeItems: "center",
         }}
       >
-        <CircularProgress
-          size={34}
-          thickness={4}
-          sx={{ color: "#F4C430" }}
-        />
+        <CircularProgress size={34} thickness={4} sx={{ color: "#F4C430" }} />
       </Box>
     );
   }
@@ -589,15 +480,9 @@ const ProductForm = () => {
         spacing={2}
         sx={{ mb: { xs: 2.5, md: 3.5 } }}
       >
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1.2}
-        >
+        <Stack direction="row" alignItems="center" spacing={1.2}>
           <IconButton
-            onClick={() =>
-              navigate("/admin/products")
-            }
+            onClick={() => navigate("/admin/products")}
             disabled={saving}
             sx={{
               border: "1px solid #E4E4E4",
@@ -621,9 +506,7 @@ const ProductForm = () => {
                 color: "#111",
               }}
             >
-              {isEdit
-                ? "Edit Product"
-                : "Add Product"}
+              {isEdit ? "Edit Product" : "Add Product"}
             </Typography>
 
             <Typography
@@ -648,10 +531,7 @@ const ProductForm = () => {
           variant="contained"
           startIcon={
             saving ? (
-              <CircularProgress
-                size={18}
-                sx={{ color: "#555" }}
-              />
+              <CircularProgress size={18} sx={{ color: "#555" }} />
             ) : (
               <SaveRounded />
             )
@@ -673,11 +553,7 @@ const ProductForm = () => {
             },
           }}
         >
-          {saving
-            ? "Saving..."
-            : isEdit
-            ? "Update Product"
-            : "Save Product"}
+          {saving ? "Saving..." : isEdit ? "Update Product" : "Save Product"}
         </Button>
       </Stack>
 
@@ -701,10 +577,7 @@ const ProductForm = () => {
         </Alert>
       )}
 
-      <Grid
-        container
-        spacing={{ xs: 2, md: 2.5 }}
-      >
+      <Grid container spacing={{ xs: 2, md: 2.5 }}>
         <Grid item xs={12} md={7.5}>
           <Stack spacing={2.5}>
             <MotionCard
@@ -748,8 +621,7 @@ const ProductForm = () => {
                     fontSize: "0.78rem",
                   }}
                 >
-                  Add the core information customers will
-                  see.
+                  Add the core information customers will see.
                 </Typography>
 
                 <Grid container spacing={2}>
@@ -779,13 +651,8 @@ const ProductForm = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <FormControl
-                      fullWidth
-                      disabled={saving}
-                    >
-                      <InputLabel>
-                        Category
-                      </InputLabel>
+                    <FormControl fullWidth disabled={saving}>
+                      <InputLabel>Category</InputLabel>
 
                       <Select
                         label="Category"
@@ -793,16 +660,11 @@ const ProductForm = () => {
                         value={form.category}
                         onChange={handleChange}
                       >
-                        {categories.map(
-                          (category) => (
-                            <MenuItem
-                              key={category}
-                              value={category}
-                            >
-                              {category}
-                            </MenuItem>
-                          )
-                        )}
+                        {categories.map((category) => (
+                          <MenuItem key={category} value={category}>
+                            {category}
+                          </MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
                   </Grid>
@@ -828,12 +690,8 @@ const ProductForm = () => {
                       name="description"
                       value={form.description}
                       onChange={handleChange}
-                      error={Boolean(
-                        fieldErrors.description
-                      )}
-                      helperText={
-                        fieldErrors.description
-                      }
+                      error={Boolean(fieldErrors.description)}
+                      helperText={fieldErrors.description}
                       disabled={saving}
                     />
                   </Grid>
@@ -885,8 +743,7 @@ const ProductForm = () => {
                     fontSize: "0.78rem",
                   }}
                 >
-                  Configure the product price and available
-                  stock.
+                  Configure the product price and available stock.
                 </Typography>
 
                 <Grid container spacing={2}>
@@ -900,10 +757,7 @@ const ProductForm = () => {
                       value={form.price}
                       onChange={handleChange}
                       error={Boolean(fieldErrors.price)}
-                      helperText={
-                        fieldErrors.price ||
-                        "Original price in INR"
-                      }
+                      helperText={fieldErrors.price || "Original price in INR"}
                       inputProps={{
                         min: 0,
                         step: "0.01",
@@ -933,12 +787,9 @@ const ProductForm = () => {
                       type="number"
                       value={form.discountPrice}
                       onChange={handleChange}
-                      error={Boolean(
-                        fieldErrors.discountPrice
-                      )}
+                      error={Boolean(fieldErrors.discountPrice)}
                       helperText={
-                        fieldErrors.discountPrice ||
-                        "Optional sale price"
+                        fieldErrors.discountPrice || "Optional sale price"
                       }
                       inputProps={{
                         min: 0,
@@ -1036,8 +887,7 @@ const ProductForm = () => {
                     mb: 2.5,
                   }}
                 >
-                  Upload clear product images. Maximum 5MB
-                  per image.
+                  Upload clear product images. Maximum 5MB per image.
                 </Typography>
 
                 <input
@@ -1051,12 +901,8 @@ const ProductForm = () => {
 
                 <Button
                   variant="outlined"
-                  startIcon={
-                    <AddPhotoAlternateRounded />
-                  }
-                  onClick={() =>
-                    fileInputRef.current?.click()
-                  }
+                  startIcon={<AddPhotoAlternateRounded />}
+                  onClick={() => fileInputRef.current?.click()}
                   disabled={saving}
                   sx={{
                     minHeight: 44,
@@ -1085,134 +931,112 @@ const ProductForm = () => {
                       mt: 2.5,
                     }}
                   >
-                    {existingImages.map(
-                      (image, index) => (
+                    {existingImages.map((image, index) => (
+                      <Box
+                        key={`existing-${image}-${index}`}
+                        sx={{
+                          position: "relative",
+                          aspectRatio: "1 / 1",
+                          borderRadius: 3,
+                          overflow: "hidden",
+                          border: "1px solid #E5E5E5",
+                          bgcolor: "#F7F7F7",
+                        }}
+                      >
                         <Box
-                          key={`existing-${image}-${index}`}
+                          component="img"
+                          src={image.url}
+                          alt={`Product ${index + 1}`}
                           sx={{
-                            position: "relative",
-                            aspectRatio: "1 / 1",
-                            borderRadius: 3,
-                            overflow: "hidden",
-                            border:
-                              "1px solid #E5E5E5",
-                            bgcolor: "#F7F7F7",
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+
+                        <IconButton
+                          type="button"
+                          size="small"
+                          onClick={() => removeExistingImage(index)}
+                          disabled={saving}
+                          sx={{
+                            position: "absolute",
+                            top: 7,
+                            right: 7,
+                            width: 30,
+                            height: 30,
+                            bgcolor: "rgba(255,255,255,0.92)",
+                            color: "#B3261E",
+                            "&:hover": {
+                              bgcolor: "#FFFFFF",
+                            },
                           }}
                         >
-                          <Box
-                            component="img"
-                            src={image}
-                            alt={`Product ${index + 1}`}
-                            sx={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
+                          <DeleteOutlineRounded sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Box>
+                    ))}
 
-                          <IconButton
-                            type="button"
-                            size="small"
-                            onClick={() =>
-                              removeExistingImage(
-                                index
-                              )
-                            }
-                            disabled={saving}
-                            sx={{
-                              position: "absolute",
-                              top: 7,
-                              right: 7,
-                              width: 30,
-                              height: 30,
-                              bgcolor:
-                                "rgba(255,255,255,0.92)",
-                              color: "#B3261E",
-                              "&:hover": {
-                                bgcolor: "#FFFFFF",
-                              },
-                            }}
-                          >
-                            <DeleteOutlineRounded
-                              sx={{ fontSize: 18 }}
-                            />
-                          </IconButton>
-                        </Box>
-                      )
-                    )}
-
-                    {previewUrls.map(
-                      (url, index) => (
+                    {previewUrls.map((url, index) => (
+                      <Box
+                        key={`preview-${url}`}
+                        sx={{
+                          position: "relative",
+                          aspectRatio: "1 / 1",
+                          borderRadius: 3,
+                          overflow: "hidden",
+                          border: "1px solid #E5E5E5",
+                          bgcolor: "#F7F7F7",
+                        }}
+                      >
                         <Box
-                          key={`preview-${url}`}
+                          component="img"
+                          src={url}
+                          alt={`New product ${index + 1}`}
                           sx={{
-                            position: "relative",
-                            aspectRatio: "1 / 1",
-                            borderRadius: 3,
-                            overflow: "hidden",
-                            border:
-                              "1px solid #E5E5E5",
-                            bgcolor: "#F7F7F7",
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+
+                        <Chip
+                          label="New"
+                          size="small"
+                          sx={{
+                            position: "absolute",
+                            top: 7,
+                            left: 7,
+                            height: 24,
+                            bgcolor: "#F4C430",
+                            color: "#111",
+                            fontWeight: 900,
+                            fontSize: "0.62rem",
+                          }}
+                        />
+
+                        <IconButton
+                          type="button"
+                          size="small"
+                          onClick={() => removeSelectedImage(index)}
+                          disabled={saving}
+                          sx={{
+                            position: "absolute",
+                            top: 7,
+                            right: 7,
+                            width: 30,
+                            height: 30,
+                            bgcolor: "rgba(255,255,255,0.92)",
+                            color: "#B3261E",
+                            "&:hover": {
+                              bgcolor: "#FFFFFF",
+                            },
                           }}
                         >
-                          <Box
-                            component="img"
-                            src={url}
-                            alt={`New product ${
-                              index + 1
-                            }`}
-                            sx={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-
-                          <Chip
-                            label="New"
-                            size="small"
-                            sx={{
-                              position: "absolute",
-                              top: 7,
-                              left: 7,
-                              height: 24,
-                              bgcolor: "#F4C430",
-                              color: "#111",
-                              fontWeight: 900,
-                              fontSize: "0.62rem",
-                            }}
-                          />
-
-                          <IconButton
-                            type="button"
-                            size="small"
-                            onClick={() =>
-                              removeSelectedImage(
-                                index
-                              )
-                            }
-                            disabled={saving}
-                            sx={{
-                              position: "absolute",
-                              top: 7,
-                              right: 7,
-                              width: 30,
-                              height: 30,
-                              bgcolor:
-                                "rgba(255,255,255,0.92)",
-                              color: "#B3261E",
-                              "&:hover": {
-                                bgcolor: "#FFFFFF",
-                              },
-                            }}
-                          >
-                            <DeleteOutlineRounded
-                              sx={{ fontSize: 18 }}
-                            />
-                          </IconButton>
-                        </Box>
-                      )
-                    )}
+                          <DeleteOutlineRounded sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Box>
+                    ))}
                   </Box>
                 )}
               </CardContent>
@@ -1335,8 +1159,7 @@ const ProductForm = () => {
                     fontSize: "0.78rem",
                   }}
                 >
-                  Control how this product appears in the
-                  store.
+                  Control how this product appears in the store.
                 </Typography>
 
                 <Stack spacing={0.5}>
@@ -1345,9 +1168,7 @@ const ProductForm = () => {
                       <Checkbox
                         name="isActive"
                         checked={form.isActive}
-                        onChange={
-                          handleBooleanChange
-                        }
+                        onChange={handleBooleanChange}
                         disabled={saving}
                         sx={{
                           "&.Mui-checked": {
@@ -1373,8 +1194,7 @@ const ProductForm = () => {
                             color: "#999",
                           }}
                         >
-                          Make this product available
-                          to customers.
+                          Make this product available to customers.
                         </Typography>
                       </Box>
                     }
@@ -1385,9 +1205,7 @@ const ProductForm = () => {
                       <Checkbox
                         name="isFeatured"
                         checked={form.isFeatured}
-                        onChange={
-                          handleBooleanChange
-                        }
+                        onChange={handleBooleanChange}
                         disabled={saving}
                         sx={{
                           "&.Mui-checked": {
@@ -1413,8 +1231,7 @@ const ProductForm = () => {
                             color: "#999",
                           }}
                         >
-                          Show this product in featured
-                          sections.
+                          Show this product in featured sections.
                         </Typography>
                       </Box>
                     }
@@ -1424,12 +1241,8 @@ const ProductForm = () => {
                     control={
                       <Checkbox
                         name="customizationAvailable"
-                        checked={
-                          form.customizationAvailable
-                        }
-                        onChange={
-                          handleBooleanChange
-                        }
+                        checked={form.customizationAvailable}
+                        onChange={handleBooleanChange}
                         disabled={saving}
                         sx={{
                           "&.Mui-checked": {
@@ -1455,8 +1268,7 @@ const ProductForm = () => {
                             color: "#999",
                           }}
                         >
-                          Allow customers to customize
-                          this product.
+                          Allow customers to customize this product.
                         </Typography>
                       </Box>
                     }
@@ -1478,59 +1290,36 @@ const ProductForm = () => {
                       Customization Options
                     </Typography>
 
-                    <Stack
-                      direction="row"
-                      flexWrap="wrap"
-                      gap={0.8}
-                    >
-                      {customizationTypes.map(
-                        (option) => {
-                          const selected =
-                            form.customizationOptions.includes(
-                              option
-                            );
+                    <Stack direction="row" flexWrap="wrap" gap={0.8}>
+                      {customizationTypes.map((option) => {
+                        const selected =
+                          form.customizationOptions.includes(option);
 
-                          return (
-                            <Chip
-                              key={option}
-                              label={option}
-                              clickable
-                              onClick={() =>
-                                handleCustomizationChange(
-                                  option
-                                )
-                              }
-                              sx={{
-                                bgcolor: selected
-                                  ? "#F4C430"
-                                  : "#F6F6F6",
-                                color: selected
-                                  ? "#111"
-                                  : "#666",
-                                border: selected
-                                  ? "1px solid #D7AB00"
-                                  : "1px solid #E5E5E5",
-                                fontWeight: 800,
-                                fontSize:
-                                  "0.68rem",
-                                "&:hover": {
-                                  bgcolor: selected
-                                    ? "#E7B700"
-                                    : "#FFFBEA",
-                                },
-                              }}
-                            />
-                          );
-                        }
-                      )}
+                        return (
+                          <Chip
+                            key={option}
+                            label={option}
+                            clickable
+                            onClick={() => handleCustomizationChange(option)}
+                            sx={{
+                              bgcolor: selected ? "#F4C430" : "#F6F6F6",
+                              color: selected ? "#111" : "#666",
+                              border: selected
+                                ? "1px solid #D7AB00"
+                                : "1px solid #E5E5E5",
+                              fontWeight: 800,
+                              fontSize: "0.68rem",
+                              "&:hover": {
+                                bgcolor: selected ? "#E7B700" : "#FFFBEA",
+                              },
+                            }}
+                          />
+                        );
+                      })}
                     </Stack>
 
-                    {!form.customizationOptions
-                      .length && (
-                      <FormHelperText
-                        error
-                        sx={{ mt: 1 }}
-                      >
+                    {!form.customizationOptions.length && (
+                      <FormHelperText error sx={{ mt: 1 }}>
                         Select at least one option.
                       </FormHelperText>
                     )}
@@ -1568,11 +1357,7 @@ const ProductForm = () => {
                   },
                 }}
               >
-                <Stack
-                  direction="row"
-                  spacing={1.2}
-                  alignItems="center"
-                >
+                <Stack direction="row" spacing={1.2} alignItems="center">
                   <Box
                     sx={{
                       width: 42,
@@ -1606,8 +1391,7 @@ const ProductForm = () => {
                         lineHeight: 1.45,
                       }}
                     >
-                      Review your information before
-                      saving the product.
+                      Review your information before saving the product.
                     </Typography>
                   </Box>
                 </Stack>
@@ -1619,10 +1403,7 @@ const ProductForm = () => {
                   variant="contained"
                   startIcon={
                     saving ? (
-                      <CircularProgress
-                        size={18}
-                        sx={{ color: "#555" }}
-                      />
+                      <CircularProgress size={18} sx={{ color: "#555" }} />
                     ) : (
                       <SaveRounded />
                     )
@@ -1646,16 +1427,14 @@ const ProductForm = () => {
                   {saving
                     ? "Saving..."
                     : isEdit
-                    ? "Update Product"
-                    : "Create Product"}
+                      ? "Update Product"
+                      : "Create Product"}
                 </Button>
 
                 <Button
                   fullWidth
                   type="button"
-                  onClick={() =>
-                    navigate("/admin/products")
-                  }
+                  onClick={() => navigate("/admin/products")}
                   disabled={saving}
                   sx={{
                     mt: 1,
