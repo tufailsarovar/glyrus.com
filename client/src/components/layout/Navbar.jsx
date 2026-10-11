@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+
 import { Link, NavLink, useNavigate } from "react-router-dom";
+
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
@@ -14,6 +16,9 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  ListItemIcon,
+  Menu,
+  MenuItem,
   Stack,
   Toolbar,
   Typography,
@@ -28,25 +33,35 @@ import {
   ShoppingBagOutlined,
   TrackChangesRounded,
   ArrowForwardRounded,
+  ExpandMoreRounded,
+  AppsRounded,
 } from "@mui/icons-material";
 
 import { useCart } from "../../hooks/useCart";
+
 import nameLogo from "../../assets/logo/name_logo.png";
 
 const MotionBox = motion(Box);
+
 const MotionButton = motion(Button);
 
 const navigationItems = [
   { label: "Home", path: "/" },
+
   { label: "About", path: "/about" },
+
   { label: "All Products", path: "/products" },
+
   { label: "Request NFC", path: "/request-nfc" },
+
   { label: "Contact", path: "/contact" },
 ];
 
 const Navbar = () => {
   const theme = useTheme();
+
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   const navigate = useNavigate();
 
   const { items = [], cartItems = [] } = useCart();
@@ -56,19 +71,31 @@ const Navbar = () => {
 
   const cartCount = currentCartItems.reduce(
     (total, item) => total + (Number(item?.quantity) || 0),
+
     0,
   );
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [servicesAnchor, setServicesAnchor] = useState(null);
+
+  const services = [
+    {
+      label: "TapReview",
+      description: "Collect customer reviews",
+      url: "https://tapreview-rho.vercel.app/signup",
+    },
+  ];
 
   const closeMobileMenu = () => setMobileOpen(false);
 
   const handleNavigation = (path) => {
     closeMobileMenu();
+
     navigate(path);
   };
 
   // Shared brand logo for desktop and mobile drawer
+
   const BrandLogo = ({ mobile = false }) => (
     <Stack
       direction="row"
@@ -76,6 +103,7 @@ const Navbar = () => {
       spacing={mobile ? 0.8 : 1}
       sx={{
         flexShrink: 0,
+
         minWidth: 0,
       }}
     >
@@ -86,16 +114,23 @@ const Navbar = () => {
         onError={(event) => {
           console.error(
             "Unable to load Glyrus wordmark:",
+
             event.currentTarget.src,
           );
         }}
         sx={{
           display: "block",
+
           width: mobile ? 110 : { xs: 100, sm: 120, md: 135 },
+
           height: mobile ? 36 : { xs: 36, sm: 40, md: 44 },
+
           maxWidth: "100%",
+
           flexShrink: 1,
+
           objectFit: "contain",
+
           objectPosition: "left center",
         }}
       />
@@ -110,10 +145,15 @@ const Navbar = () => {
         component="header"
         sx={{
           backgroundColor: "rgba(255,255,255,0.96)",
+
           color: "#111111",
+
           borderBottom: "1px solid rgba(17,17,17,0.08)",
+
           backdropFilter: "blur(18px)",
+
           WebkitBackdropFilter: "blur(18px)",
+
           zIndex: theme.zIndex.appBar,
         }}
       >
@@ -122,11 +162,14 @@ const Navbar = () => {
             disableGutters
             sx={{
               minHeight: { xs: 68, md: 78 },
+
               justifyContent: "space-between",
+
               gap: { xs: 1, md: 2 },
             }}
           >
             {/* Brand logo */}
+
             <MotionBox
               component={Link}
               to="/"
@@ -135,8 +178,11 @@ const Navbar = () => {
               whileTap={{ scale: 0.97 }}
               sx={{
                 display: "inline-flex",
+
                 alignItems: "center",
+
                 flexShrink: 0,
+
                 textDecoration: "none",
               }}
             >
@@ -144,6 +190,7 @@ const Navbar = () => {
             </MotionBox>
 
             {/* Desktop navigation */}
+
             {!isMobile && (
               <Stack
                 component="nav"
@@ -152,7 +199,9 @@ const Navbar = () => {
                 spacing={{ md: 0.5, lg: 1 }}
                 sx={{
                   flex: 1,
+
                   justifyContent: "center",
+
                   ml: { md: 1, lg: 2 },
                 }}
               >
@@ -169,26 +218,43 @@ const Navbar = () => {
                         whileTap={{ scale: 0.97 }}
                         sx={{
                           position: "relative",
+
                           px: { md: 1, lg: 1.4 },
+
                           py: 1,
+
                           borderRadius: 2,
+
                           color: isActive ? "#111111" : "#5E5E5E",
+
                           transition: "color 180ms ease",
+
                           "&:hover": {
                             color: "#111111",
+
                             backgroundColor: "rgba(245,180,0,0.07)",
                           },
+
                           "&::after": {
                             content: '""',
+
                             position: "absolute",
+
                             left: "50%",
+
                             bottom: 3,
+
                             width: isActive ? 22 : 0,
+
                             height: 3,
+
                             borderRadius: 999,
+
                             background:
                               "linear-gradient(90deg,#FFD600,#F2A900)",
+
                             transform: "translateX(-50%)",
+
                             transition: "width 220ms ease",
                           },
                         }}
@@ -196,7 +262,9 @@ const Navbar = () => {
                         <Typography
                           sx={{
                             fontSize: { md: 13, lg: 14 },
+
                             fontWeight: isActive ? 750 : 600,
+
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -209,7 +277,94 @@ const Navbar = () => {
               </Stack>
             )}
 
+            <Box>
+              <MotionBox
+                component="button"
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={Boolean(servicesAnchor)}
+                onClick={(event) => setServicesAnchor(event.currentTarget)}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.35,
+                  px: { md: 1, lg: 1.4 },
+                  py: 1,
+                  border: 0,
+                  borderRadius: 2,
+                  bgcolor: servicesAnchor
+                    ? "rgba(245,180,0,0.07)"
+                    : "transparent",
+                  color: "#5E5E5E",
+                  cursor: "pointer",
+                  font: "inherit",
+                  "&:hover": {
+                    color: "#111111",
+                    bgcolor: "rgba(245,180,0,0.07)",
+                  },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: { md: 13, lg: 14 },
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Services
+                </Typography>
+                <ExpandMoreRounded sx={{ fontSize: 18 }} />
+              </MotionBox>
+              <Menu
+                anchorEl={servicesAnchor}
+                open={Boolean(servicesAnchor)}
+                onClose={() => setServicesAnchor(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    minWidth: 250,
+                    p: 0.75,
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "14px",
+                    boxShadow: "0 12px 35px rgba(15,23,42,0.12)",
+                  },
+                }}
+              >
+                {services.map((service) => (
+                  <MenuItem
+                    key={service.label}
+                    component="a"
+                    href={service.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setServicesAnchor(null)}
+                    sx={{ py: 1.3, px: 1.5, borderRadius: "10px" }}
+                  >
+                    <ListItemIcon>
+                      <AppsRounded sx={{ color: "#3158c9" }} />
+                    </ListItemIcon>
+                    <Box>
+                      <Typography fontWeight={750} fontSize={14}>
+                        {service.label}
+                      </Typography>
+                      <Typography fontSize={11} color="text.secondary">
+                        {service.description}
+                      </Typography>
+                    </Box>
+                    <ArrowForwardRounded
+                      sx={{ ml: "auto", fontSize: 17, color: "#9ca3af" }}
+                    />
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Box>
+
             {/* Desktop actions */}
+
             {!isMobile && (
               <Stack direction="row" alignItems="center" spacing={0.5}>
                 <IconButton
@@ -239,7 +394,9 @@ const Navbar = () => {
                     sx={{
                       "& .MuiBadge-badge": {
                         backgroundColor: "#FFD000",
+
                         color: "#111111",
+
                         fontWeight: 900,
                       },
                     }}
@@ -254,15 +411,24 @@ const Navbar = () => {
                   endIcon={<ArrowForwardRounded />}
                   sx={{
                     ml: 0.7,
+
                     minHeight: 42,
+
                     px: 2,
+
                     borderRadius: "12px",
+
                     textTransform: "none",
+
                     fontWeight: 800,
+
                     fontSize: 13,
+
                     color: "#111111",
+
                     background:
                       "linear-gradient(135deg,#FFD900 0%,#F4AE00 100%)",
+
                     "&:hover": {
                       background:
                         "linear-gradient(135deg,#FFE329 0%,#F6B600 100%)",
@@ -275,6 +441,7 @@ const Navbar = () => {
             )}
 
             {/* Mobile actions */}
+
             {isMobile && (
               <Stack direction="row" alignItems="center" spacing={0.2}>
                 <IconButton
@@ -296,6 +463,7 @@ const Navbar = () => {
                     sx={{
                       "& .MuiBadge-badge": {
                         backgroundColor: "#FFD000",
+
                         color: "#111111",
                       },
                     }}
@@ -309,9 +477,13 @@ const Navbar = () => {
                   aria-label="Open navigation menu"
                   sx={{
                     width: 42,
+
                     height: 42,
+
                     color: "#111111",
+
                     border: "1px solid rgba(17,17,17,0.08)",
+
                     borderRadius: "12px",
                   }}
                 >
@@ -324,6 +496,7 @@ const Navbar = () => {
       </AppBar>
 
       {/* Mobile navigation drawer */}
+
       <Drawer
         anchor="right"
         open={mobileOpen}
@@ -332,23 +505,34 @@ const Navbar = () => {
         PaperProps={{
           sx: {
             width: { xs: "86vw", sm: 370 },
+
             maxWidth: 390,
+
             backgroundColor: "#FFFFFF",
+
             borderTopLeftRadius: "24px",
+
             borderBottomLeftRadius: "24px",
+
             overflow: "hidden",
           },
         }}
       >
         <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
           {/* Drawer header */}
+
           <Box
             sx={{
               px: 2.2,
+
               py: 2,
+
               display: "flex",
+
               alignItems: "center",
+
               justifyContent: "space-between",
+
               borderBottom: "1px solid rgba(17,17,17,0.07)",
             }}
           >
@@ -367,9 +551,13 @@ const Navbar = () => {
               aria-label="Close navigation menu"
               sx={{
                 width: 42,
+
                 height: 42,
+
                 color: "#111111",
+
                 borderRadius: "12px",
+
                 backgroundColor: "#F7F7F7",
               }}
             >
@@ -378,6 +566,7 @@ const Navbar = () => {
           </Box>
 
           {/* Navigation links */}
+
           <List disablePadding sx={{ px: 1.5, pt: 2 }}>
             {navigationItems.map((item, index) => (
               <motion.div
@@ -397,14 +586,20 @@ const Navbar = () => {
                       <ListItemButton
                         sx={{
                           minHeight: 52,
+
                           px: 1.8,
+
                           borderRadius: "14px",
+
                           color: isActive ? "#111111" : "#555555",
+
                           backgroundColor: isActive
                             ? "rgba(255,210,0,0.14)"
                             : "transparent",
+
                           "&:hover": {
                             backgroundColor: "rgba(255,210,0,0.10)",
+
                             color: "#111111",
                           },
                         }}
@@ -413,16 +608,22 @@ const Navbar = () => {
                           primary={item.label}
                           primaryTypographyProps={{
                             fontSize: 15,
+
                             fontWeight: isActive ? 800 : 600,
                           }}
                         />
+
                         {isActive && (
                           <Box
                             sx={{
                               width: 7,
+
                               height: 7,
+
                               borderRadius: "50%",
+
                               backgroundColor: "#F5B400",
+
                               boxShadow: "0 0 0 5px rgba(245,180,0,0.10)",
                             }}
                           />
@@ -435,7 +636,44 @@ const Navbar = () => {
             ))}
           </List>
 
+          <motion.div
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{
+              delay: 0.04 * navigationItems.length,
+              duration: 0.22,
+            }}
+          >
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                component="a"
+                href="https://tapreview-rho.vercel.app/signup"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeMobileMenu}
+                sx={{
+                  minHeight: 58,
+                  px: 1.8,
+                  borderRadius: "14px",
+                  "&:hover": { backgroundColor: "rgba(255,210,0,0.10)" },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 38 }}>
+                  <AppsRounded sx={{ color: "#3158c9" }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Services · TapReview"
+                  secondary="Collect customer reviews"
+                  primaryTypographyProps={{ fontSize: 14, fontWeight: 750 }}
+                  secondaryTypographyProps={{ fontSize: 11 }}
+                />
+                <ArrowForwardRounded sx={{ fontSize: 18, color: "#9ca3af" }} />
+              </ListItemButton>
+            </ListItem>
+          </motion.div>
+
           {/* Mobile extra actions */}
+
           <Box sx={{ px: 1.5, mt: 1 }}>
             <Button
               fullWidth
@@ -443,12 +681,19 @@ const Navbar = () => {
               startIcon={<TrackChangesRounded />}
               sx={{
                 justifyContent: "flex-start",
+
                 minHeight: 52,
+
                 px: 1.8,
+
                 borderRadius: "14px",
+
                 textTransform: "none",
+
                 fontSize: 15,
+
                 fontWeight: 700,
+
                 color: "#333333",
               }}
             >
@@ -465,6 +710,7 @@ const Navbar = () => {
                   sx={{
                     "& .MuiBadge-badge": {
                       backgroundColor: "#FFD000",
+
                       color: "#111111",
                     },
                   }}
@@ -474,12 +720,19 @@ const Navbar = () => {
               }
               sx={{
                 justifyContent: "flex-start",
+
                 minHeight: 52,
+
                 px: 1.8,
+
                 borderRadius: "14px",
+
                 textTransform: "none",
+
                 fontSize: 15,
+
                 fontWeight: 700,
+
                 color: "#333333",
               }}
             >
@@ -488,6 +741,7 @@ const Navbar = () => {
           </Box>
 
           {/* Mobile CTA */}
+
           <Box sx={{ mt: "auto", p: 2 }}>
             <MotionButton
               fullWidth
@@ -496,12 +750,19 @@ const Navbar = () => {
               endIcon={<ArrowForwardRounded />}
               sx={{
                 minHeight: 54,
+
                 borderRadius: "15px",
+
                 textTransform: "none",
+
                 fontSize: 15,
+
                 fontWeight: 850,
+
                 color: "#111111",
+
                 background: "linear-gradient(135deg,#FFD900 0%,#F4AE00 100%)",
+
                 "&:hover": {
                   background: "linear-gradient(135deg,#FFE329 0%,#F6B600 100%)",
                 },
