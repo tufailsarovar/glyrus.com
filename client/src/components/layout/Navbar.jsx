@@ -10,6 +10,7 @@ import {
   Box,
   Button,
   Container,
+  Divider,
   Drawer,
   IconButton,
   List,
@@ -161,12 +162,10 @@ const Navbar = () => {
           <Toolbar
             disableGutters
             sx={{
-              minHeight: { xs: 68, md: 78 },
-
-              justifyContent: "space-between",
-
-              gap: { xs: 1, md: 2 },
-            }}
+  minHeight: { xs: 68, md: 78 },
+  justifyContent: "space-between",
+  gap: { xs: 1, md: 2 },
+}}
           >
             {/* Brand logo */}
 
@@ -196,14 +195,12 @@ const Navbar = () => {
                 component="nav"
                 direction="row"
                 alignItems="center"
-                spacing={{ md: 0.5, lg: 1 }}
-                sx={{
-                  flex: 1,
-
-                  justifyContent: "center",
-
-                  ml: { md: 1, lg: 2 },
-                }}
+                spacing={0}
+              sx={{
+  flex: 1,
+  justifyContent: "center",
+  ml: 0,
+}}
               >
                 {navigationItems.map((item) => (
                   <NavLink
@@ -277,91 +274,202 @@ const Navbar = () => {
               </Stack>
             )}
 
-            <Box>
-              <MotionBox
-                component="button"
-                type="button"
-                aria-haspopup="true"
-                aria-expanded={Boolean(servicesAnchor)}
-                onClick={(event) => setServicesAnchor(event.currentTarget)}
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.97 }}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.35,
-                  px: { md: 1, lg: 1.4 },
-                  py: 1,
-                  border: 0,
-                  borderRadius: 2,
-                  bgcolor: servicesAnchor
-                    ? "rgba(245,180,0,0.07)"
-                    : "transparent",
-                  color: "#5E5E5E",
-                  cursor: "pointer",
-                  font: "inherit",
-                  "&:hover": {
-                    color: "#111111",
-                    bgcolor: "rgba(245,180,0,0.07)",
-                  },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: { md: 13, lg: 14 },
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Services
-                </Typography>
-                <ExpandMoreRounded sx={{ fontSize: 18 }} />
-              </MotionBox>
-              <Menu
-                anchorEl={servicesAnchor}
-                open={Boolean(servicesAnchor)}
-                onClose={() => setServicesAnchor(null)}
-                anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-                transformOrigin={{ vertical: "top", horizontal: "left" }}
-                PaperProps={{
-                  sx: {
-                    mt: 1,
-                    minWidth: 250,
-                    p: 0.75,
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "14px",
-                    boxShadow: "0 12px 35px rgba(15,23,42,0.12)",
-                  },
-                }}
-              >
-                {services.map((service) => (
-                  <MenuItem
-                    key={service.label}
-                    component="a"
-                    href={service.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setServicesAnchor(null)}
-                    sx={{ py: 1.3, px: 1.5, borderRadius: "10px" }}
-                  >
-                    <ListItemIcon>
-                      <AppsRounded sx={{ color: "#3158c9" }} />
-                    </ListItemIcon>
-                    <Box>
-                      <Typography fontWeight={750} fontSize={14}>
-                        {service.label}
-                      </Typography>
-                      <Typography fontSize={11} color="text.secondary">
-                        {service.description}
-                      </Typography>
-                    </Box>
-                    <ArrowForwardRounded
-                      sx={{ ml: "auto", fontSize: 17, color: "#9ca3af" }}
-                    />
-                  </MenuItem>
-                ))}
-              </Menu>
-            </Box>
+            
+
+
+{/* Compact, multi-service dropdown — desktop only */}
+<Box sx={{ display: { xs: "none", md: "block" }, flexShrink: 0 }}>
+  <MotionBox
+    component="button"
+    type="button"
+    aria-haspopup="true"
+    aria-expanded={Boolean(servicesAnchor)}
+    onClick={(event) => setServicesAnchor(event.currentTarget)}
+    whileHover={{ y: -1 }}
+    whileTap={{ scale: 0.97 }}
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      gap: 0.65,
+      px: 1.15,
+      py: 0.7,
+      border: "1px solid",
+      borderColor: servicesAnchor ? "#E7B800" : "#EAEAEA",
+      borderRadius: "999px",
+      background: servicesAnchor ? "#FFF5CC" : "#FFFFFF",
+      color: "#202020",
+      cursor: "pointer",
+      font: "inherit",
+      transition: "all 180ms ease",
+      "&:hover": {
+        background: "#FFF8E1",
+        borderColor: "#E7C34A",
+      },
+    }}
+  >
+    <Box
+      sx={{
+        width: 23,
+        height: 23,
+        display: "grid",
+        placeItems: "center",
+        borderRadius: "50%",
+        background: "#FFE27A",
+        color: "#493900",
+      }}
+    >
+      <AppsRounded sx={{ fontSize: 15 }} />
+    </Box>
+
+    <Typography sx={{ fontSize: 12.5, fontWeight: 800 }}>
+      Services
+    </Typography>
+
+    <motion.span
+      animate={{ rotate: servicesAnchor ? 180 : 0 }}
+      transition={{ duration: 0.2 }}
+      style={{ display: "flex" }}
+    >
+      <ExpandMoreRounded sx={{ fontSize: 17 }} />
+    </motion.span>
+  </MotionBox>
+
+  <Menu
+    anchorEl={servicesAnchor}
+    open={Boolean(servicesAnchor)}
+    onClose={() => setServicesAnchor(null)}
+    anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+    transformOrigin={{ vertical: "top", horizontal: "center" }}
+    TransitionProps={{ timeout: 180 }}
+    PaperProps={{
+      sx: {
+        mt: 0.8,
+        width: 265,
+        p: 0.75,
+        border: "1px solid #EEEEEE",
+        borderRadius: "16px",
+        background: "#FFFFFF",
+        boxShadow: "0 12px 35px rgba(0,0,0,0.10)",
+        overflow: "hidden",
+      },
+    }}
+  >
+    {/* Neutral heading for every service */}
+    <Box sx={{ px: 1.2, pt: 0.7, pb: 0.8 }}>
+      <Typography
+        sx={{
+          fontSize: 14,
+          fontWeight: 850,
+          color: "#202020",
+        }}
+      >
+        Explore services
+      </Typography>
+
+      <Typography
+        sx={{
+          mt: 0.2,
+          fontSize: 10.5,
+          color: "#888888",
+        }}
+      >
+        Discover tools and solutions
+      </Typography>
+    </Box>
+
+    <Divider sx={{ mb: 0.5, borderColor: "#F0F0F0" }} />
+
+    {services.map((service, index) => (
+      <motion.div
+        key={service.label}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, delay: index * 0.04 }}
+      >
+        <MenuItem
+          component="a"
+          href={service.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setServicesAnchor(null)}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            px: 1,
+            py: 0.9,
+            mb: 0.25,
+            borderRadius: "11px",
+            whiteSpace: "normal",
+            "&:hover": {
+              background: "#FFF8E4",
+            },
+            "&:hover .service-icon": {
+              transform: "scale(1.06)",
+              background: "#FFD95C",
+            },
+            "&:hover .service-arrow": {
+              transform: "translateX(3px)",
+              color: "#B18A00",
+            },
+          }}
+        >
+          <Box
+            className="service-icon"
+            sx={{
+              width: 35,
+              height: 35,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "10px",
+              background: "#FFF0B3",
+              color: "#493900",
+              transition: "all 180ms ease",
+            }}
+          >
+            <AppsRounded sx={{ fontSize: 19 }} />
+          </Box>
+
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: "#252525",
+              }}
+            >
+              {service.label}
+            </Typography>
+
+            <Typography
+              sx={{
+                mt: 0.15,
+                fontSize: 10.5,
+                lineHeight: 1.4,
+                color: "#858585",
+              }}
+            >
+              {service.description}
+            </Typography>
+          </Box>
+
+          <ArrowForwardRounded
+            className="service-arrow"
+            sx={{
+              fontSize: 17,
+              color: "#AAAAAA",
+              transition: "transform 180ms ease, color 180ms ease",
+            }}
+          />
+        </MenuItem>
+      </motion.div>
+    ))}
+  </Menu>
+</Box>
+
+
+
 
             {/* Desktop actions */}
 

@@ -57,13 +57,13 @@ const initialForm = {
 
 const categories = [
   "NFC Cards",
+  "QR Code Stands",
+  "QR Business Cards",
+  "Digital QR Menus",
+  "Google Review QR",
   "NFC Tags",
   "NFC Keychains",
-  "NFC Stickers",
-  "NFC Stands",
-  "NFC Accessories",
-  "Business Solutions",
-  "Other",
+  "NFC Stands"
 ];
 
 const customizationTypes = [
