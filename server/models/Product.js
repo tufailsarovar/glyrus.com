@@ -164,13 +164,27 @@ const productSchema = new mongoose.Schema(
    NORMALIZE PRODUCT DATA
 ------------------------------------------------------- */
 
-productSchema.pre("save", function (next) {
-  if (this.title && !this.slug) {
-    this.slug = this.title
+productSchema.pre("save", async function () {
+  if (this.isNew || this.isModified("title") || !this.slug) {
+    const baseSlug = (this.title || "product")
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
+
+    let slug = baseSlug || "product";
+    let count = 1;
+
+    while (
+      await this.constructor.exists({
+        slug,
+        _id: { $ne: this._id },
+      })
+    ) {
+      slug = `${baseSlug || "product"}-${count++}`;
+    }
+
+    this.slug = slug;
   }
 
   if (this.images?.length > 0 && !this.image) {
@@ -180,8 +194,6 @@ productSchema.pre("save", function (next) {
   if (this.compareAtPrice && this.compareAtPrice < this.price) {
     this.compareAtPrice = 0;
   }
-
-  next();
 });
 
 /* -------------------------------------------------------
