@@ -27,43 +27,33 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
     item.product?.name ||
     "NFC Product";
 
- 
+  const getImageUrl = (value) => {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
 
-const getImageUrl = (value) => {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
-  }
+    if (value && typeof value === "object") {
+      return value.url || value.secure_url || value.src || value.imageUrl || "";
+    }
 
-  if (value && typeof value === "object") {
-    return (
-      value.url ||
-      value.secure_url ||
-      value.src ||
-      value.imageUrl ||
-      ""
-    );
-  }
+    return "";
+  };
 
-  return "";
-};
-
-const image =
-  [
-    item?.image,
-    item?.imageUrl,
-    item?.thumbnail,
-    item?.coverUrl,
-    item?.coverImage,
-    item?.images?.[0],
-    item?.product?.image,
-    item?.product?.imageUrl,
-    item?.product?.thumbnail,
-    item?.product?.images?.[0],
-  ]
-    .map(getImageUrl)
-    .find(Boolean) || "/placeholder-product.png";
-
-
+  const image =
+    [
+      item?.image,
+      item?.imageUrl,
+      item?.thumbnail,
+      item?.coverUrl,
+      item?.coverImage,
+      item?.images?.[0],
+      item?.product?.image,
+      item?.product?.imageUrl,
+      item?.product?.thumbnail,
+      item?.product?.images?.[0],
+    ]
+      .map(getImageUrl)
+      .find(Boolean) || "/placeholder-product.png";
 
   const price = Number(item.price) || Number(item.product?.price) || 0;
 

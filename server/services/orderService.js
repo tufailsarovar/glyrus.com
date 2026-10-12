@@ -144,23 +144,42 @@ const normalizeCustomization = (customization) => {
   return result;
 };
 
+
 const getProductPrice = (product) => {
-  const price = product?.price;
+  const regularPrice = toNumber(product?.price, 0);
+  const discountPrice = toNumber(product?.discountPrice, 0);
+  const sellingPrice = toNumber(
+    product?.itemPrices?.sellingPrice,
+    0
+  );
+  const itemPrice = toNumber(
+    product?.itemPrices?.price,
+    0
+  );
 
-  if (price !== undefined && price !== null) {
-    return toNumber(price);
+  // Use a valid discounted price when available.
+  if (
+    discountPrice > 0 &&
+    (regularPrice <= 0 || discountPrice < regularPrice)
+  ) {
+    return discountPrice;
   }
 
-  if (product?.itemPrices?.sellingPrice !== undefined) {
-    return toNumber(product.itemPrices.sellingPrice);
+  if (regularPrice > 0) {
+    return regularPrice;
   }
 
-  if (product?.itemPrices?.price !== undefined) {
-    return toNumber(product.itemPrices.price);
+  if (sellingPrice > 0) {
+    return sellingPrice;
+  }
+
+  if (itemPrice > 0) {
+    return itemPrice;
   }
 
   return 0;
 };
+
 
 const getProductName = (product) =>
   cleanString(product?.title || product?.name || "Glyrus Product", 150);

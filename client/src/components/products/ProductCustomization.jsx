@@ -71,8 +71,7 @@ const ProductCustomization = ({
         },
         border: "1px solid rgba(17,17,17,0.07)",
         backgroundColor: "#FFFFFF",
-        boxShadow:
-          "0 10px 32px rgba(17,17,17,0.055)",
+        boxShadow: "0 10px 32px rgba(17,17,17,0.055)",
       }}
     >
       {/* Header */}
@@ -102,8 +101,7 @@ const ProductCustomization = ({
               sm: "13px",
             },
             color: "#111111",
-            background:
-              "linear-gradient(135deg, #FFD900 0%, #F1AA00 100%)",
+            background: "linear-gradient(135deg, #FFD900 0%, #F1AA00 100%)",
           }}
         >
           <PaletteRounded
@@ -145,8 +143,7 @@ const ProductCustomization = ({
               lineHeight: 1.5,
             }}
           >
-            Add your business details and customization
-            requirements.
+            Add your business details and customization requirements.
           </Typography>
         </Box>
       </Stack>
@@ -174,8 +171,7 @@ const ProductCustomization = ({
           onChange={handleChange("businessName")}
           error={Boolean(errors.businessName)}
           helperText={
-            errors.businessName ||
-            "Name that should appear on the product."
+            errors.businessName || "Name that should appear on the product."
           }
           InputProps={{
             startAdornment: (
@@ -199,17 +195,12 @@ const ProductCustomization = ({
           onChange={handleChange("logoText")}
           error={Boolean(errors.logoText)}
           helperText={
-            errors.logoText ||
-            "Optional brand name or text for customization."
+            errors.logoText || "Optional brand name or text for customization."
           }
           sx={fieldStyles}
         />
 
-        <FormControl
-          fullWidth
-          error={Boolean(errors.color)}
-          sx={fieldStyles}
-        >
+        <FormControl fullWidth error={Boolean(errors.color)} sx={fieldStyles}>
           <InputLabel>Preferred Color</InputLabel>
 
           <Select
@@ -220,29 +211,16 @@ const ProductCustomization = ({
             <MenuItem value="">
               <em>Select a color</em>
             </MenuItem>
-            <MenuItem value="Black">
-              Black
-            </MenuItem>
-            <MenuItem value="White">
-              White
-            </MenuItem>
-            <MenuItem value="Gold">
-              Gold
-            </MenuItem>
-            <MenuItem value="Yellow">
-              Yellow
-            </MenuItem>
-            <MenuItem value="Silver">
-              Silver
-            </MenuItem>
-            <MenuItem value="Custom">
-              Custom Color
-            </MenuItem>
+            <MenuItem value="Black">Black</MenuItem>
+            <MenuItem value="White">White</MenuItem>
+            <MenuItem value="Gold">Gold</MenuItem>
+            <MenuItem value="Yellow">Yellow</MenuItem>
+            <MenuItem value="Silver">Silver</MenuItem>
+            <MenuItem value="Custom">Custom Color</MenuItem>
           </Select>
 
           <FormHelperText>
-            {errors.color ||
-              "Choose the preferred product color."}
+            {errors.color || "Choose the preferred product color."}
           </FormHelperText>
         </FormControl>
 
@@ -257,8 +235,7 @@ const ProductCustomization = ({
           onChange={handleChange("customText")}
           error={Boolean(errors.customText)}
           helperText={
-            errors.customText ||
-            "Optional. Leave empty if not required."
+            errors.customText || "Optional. Leave empty if not required."
           }
           sx={fieldStyles}
         />
@@ -299,10 +276,8 @@ const ProductCustomization = ({
             xs: "12px",
             sm: "14px",
           },
-          backgroundColor:
-            "rgba(255,208,0,0.075)",
-          border:
-            "1px solid rgba(241,170,0,0.14)",
+          backgroundColor: "rgba(255,208,0,0.075)",
+          border: "1px solid rgba(241,170,0,0.14)",
         }}
       >
         <CheckCircleRounded
@@ -328,8 +303,8 @@ const ProductCustomization = ({
             lineHeight: 1.55,
           }}
         >
-          Please make sure your customization details
-          are correct before placing the order.
+          Please make sure your customization details are correct before placing
+          the order.
         </Typography>
       </Box>
     </MotionBox>
