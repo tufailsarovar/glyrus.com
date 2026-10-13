@@ -1,440 +1,747 @@
-// Glyrus — Login.jsx
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
   Button,
-  Checkbox,
   CircularProgress,
   Container,
-  FormControlLabel,
-  IconButton,
   InputAdornment,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
 import {
-  AdminPanelSettingsRounded,
   ArrowForwardRounded,
-  LockRounded,
-  Visibility,
-  VisibilityOff,
+  ArrowBackRounded,
+  EmailOutlined,
+  LockOutlined,
+  SecurityRounded,
 } from "@mui/icons-material";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
+import roundLogo from "../../assets/logo/glyrus_round_logo.png";
+import nameLogo from "../../assets/logo/name_logo.png";
 
+const MotionBox = motion(Box);
 const MotionPaper = motion(Paper);
+const SESSION_DURATION = 60 * 60 * 1000;
+
+const clearAdminSession = () => {
+  localStorage.removeItem("Glyrus_admin_token");
+  localStorage.removeItem("Glyrus_admin_login_time");
+  localStorage.removeItem("Glyrus_admin");
+  sessionStorage.removeItem("Glyrus_admin_token");
+  sessionStorage.removeItem("Glyrus_admin_login_time");
+};
 
 const Login = () => {
   const navigate = useNavigate();
+  const ticketProcessed = useRef(false);
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [method, setMethod] = useState(0);
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  // Check whether an existing stored session has expired.
+  useEffect(() => {
+    const token = localStorage.getItem("Glyrus_admin_token");
+    const loginTime = Number(localStorage.getItem("Glyrus_admin_login_time"));
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    if (!token || !loginTime) return;
 
-    if (error) {
-      setError("");
+    const remaining = SESSION_DURATION - (Date.now() - loginTime);
+
+    if (remaining <= 0) {
+      clearAdminSession();
+      return;
     }
+
+    const timer = window.setTimeout(() => {
+      clearAdminSession();
+      navigate("/admin/login", { replace: true });
+    }, remaining);
+
+    return () => window.clearTimeout(timer);
+  }, [navigate]);
+
+  // Complete the Google login ticket exchange.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const googleError = params.get("google_error");
+    const googleTicket = params.get("google_ticket");
+
+    if (googleError) {
+      setMethod(0);
+      setError(googleError);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    if (!googleTicket || ticketProcessed.current) return;
+
+    ticketProcessed.current = true;
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    const exchangeTicket = async () => {
+      try {
+        setGoogleLoading(true);
+        setError("");
+
+        const response = await api.post(
+          "/api/admin/auth/google/exchange-ticket",
+          { ticket: googleTicket },
+        );
+
+        const data = response?.data;
+
+        if (!data?.success || !data?.token) {
+          throw new Error(data?.message || "Google login verification failed.");
+        }
+
+        localStorage.setItem("Glyrus_admin_token", data.token);
+        localStorage.setItem("Glyrus_admin_login_time", String(Date.now()));
+        localStorage.setItem("Glyrus_admin", JSON.stringify(data.admin));
+
+        sessionStorage.removeItem("Glyrus_admin_token");
+        sessionStorage.removeItem("Glyrus_admin_login_time");
+
+        navigate("/admin", { replace: true });
+      } catch (err) {
+        ticketProcessed.current = false;
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Google login failed. Please try again.",
+        );
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    exchangeTicket();
+  }, [navigate]);
+
+  const saveSession = (data) => {
+    const token = data?.token || data?.accessToken;
+
+    if (!token) {
+      throw new Error("Authentication token was not received.");
+    }
+
+    localStorage.setItem("Glyrus_admin_token", token);
+    localStorage.setItem("Glyrus_admin_login_time", String(Date.now()));
+
+    sessionStorage.removeItem("Glyrus_admin_token");
+    sessionStorage.removeItem("Glyrus_admin_login_time");
+
+    localStorage.setItem(
+      "Glyrus_admin",
+      JSON.stringify({
+        name: data?.admin?.name || "Glyrus Admin",
+        email: data?.admin?.email || email.trim().toLowerCase(),
+        role: "admin",
+      }),
+    );
+
+    navigate("/admin", { replace: true });
   };
-  const handleSubmit = async (event) => {
+
+  const handleRequestOtp = async (event) => {
     event.preventDefault();
 
-    if (!form.email.trim() || !form.password) {
-      setError("Please enter your email and password.");
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+
+      const response = await api.post("/api/admin/auth/request-otp", {
+        email: email.trim().toLowerCase(),
+      });
+
+      setOtpSent(true);
+      setSuccess(
+        response?.data?.message ||
+          "OTP sent successfully. Check your admin email.",
+      );
+    } catch (err) {
+      setError(
+        err?.response?.data?.message || "Unable to send OTP. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (event) => {
+    event.preventDefault();
+
+    if (!/^\d{6}$/.test(otp)) {
+      setError("Enter the valid 6-digit OTP.");
       return;
     }
 
     try {
       setLoading(true);
       setError("");
+      setSuccess("");
 
-      const response = await api.post("/api/admin/auth/login", {
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
+      const response = await api.post("/api/admin/auth/verify-otp", {
+        email: email.trim().toLowerCase(),
+        otp: otp.trim(),
       });
 
-      const data = response?.data;
-
-      const token =
-        data?.token ||
-        data?.accessToken ||
-        data?.admin?.token ||
-        data?.data?.token ||
-        data?.data?.accessToken;
-
-      if (!token) {
-        throw new Error(
-          data?.message || "Login failed. No authentication token received.",
-        );
-      }
-
-      const storage = rememberMe ? localStorage : sessionStorage;
-
-      storage.setItem("Glyrus_admin_token", token);
-
-      storage.setItem("Glyrus_admin_login_time", String(Date.now()));
-
-      // Clear the other storage completely
-      const otherStorage = rememberMe ? sessionStorage : localStorage;
-
-      otherStorage.removeItem("Glyrus_admin_token");
-
-      otherStorage.removeItem("Glyrus_admin_login_time");
-
-      if (data?.admin) {
-        const adminData = {
-          name: data.admin.name || "Glyrus Admin",
-          email: data.admin.email || form.email.trim().toLowerCase(),
-        };
-
-        const storage = rememberMe ? localStorage : sessionStorage;
-
-        storage.setItem("Glyrus_admin", JSON.stringify(adminData));
-      }
-
-      navigate("/admin", { replace: true });
+      saveSession(response?.data);
     } catch (err) {
-      console.error("Admin login error:", err);
-
       setError(
         err?.response?.data?.message ||
-          err?.response?.data?.error ||
           err?.message ||
-          "Invalid admin credentials. Please try again.",
+          "OTP verification failed. Please try again.",
       );
     } finally {
       setLoading(false);
     }
   };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      setError("");
+      setSuccess("");
+
+      const response = await api.get("/api/admin/auth/google");
+
+      if (response?.data?.url) {
+        window.location.assign(response.data.url);
+        return;
+      }
+
+      setError("Google login is not configured yet.");
+      setGoogleLoading(false);
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+          "Unable to start Google login. Please try again.",
+      );
+      setGoogleLoading(false);
+    }
+  };
+
+  const fieldSx = {
+    "& .MuiOutlinedInput-root": {
+      minHeight: 43,
+      borderRadius: "5px",
+      fontSize: "0.84rem",
+      bgcolor: "#fff",
+      "& fieldset": { borderColor: "#dce2ec" },
+      "&:hover fieldset": { borderColor: "#a9baf3" },
+      "&.Mui-focused fieldset": {
+        borderColor: "#315EF4",
+        borderWidth: "1px",
+      },
+    },
+    "& .MuiInputLabel-root": { fontSize: "0.84rem" },
+  };
+
   return (
     <Box
       sx={{
-        minHeight: "100vh",
-        bgcolor: "#FAFAFA",
+        minHeight: "100dvh",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        position: "relative",
-        overflow: "hidden",
-        px: { xs: 2, sm: 3 },
-        py: { xs: 3, sm: 5 },
+        flexDirection: "column",
+        overflowX: "hidden",
+        color: "#172033",
+        background:
+          "radial-gradient(ellipse at 10% 15%, #e9efff 0%, transparent 38%), radial-gradient(ellipse at 90% 80%, #eeecff 0%, transparent 35%), #f8faff",
+        "& *": { boxSizing: "border-box" },
       }}
     >
-      <Box
-        sx={{
-          position: "absolute",
-          width: { xs: 260, sm: 420 },
-          height: { xs: 260, sm: 420 },
-          borderRadius: "50%",
-          bgcolor: "#FFF1A8",
-          filter: "blur(90px)",
-          opacity: 0.38,
-          top: { xs: -130, sm: -180 },
-          right: { xs: -120, sm: -150 },
-          pointerEvents: "none",
-        }}
-      />
+      {/* Use the existing website navbar */}
+      <Navbar />
 
       <Box
+        component="main"
         sx={{
-          position: "absolute",
-          width: { xs: 220, sm: 340 },
-          height: { xs: 220, sm: 340 },
-          borderRadius: "50%",
-          bgcolor: "#F7D65A",
-          filter: "blur(100px)",
-          opacity: 0.16,
-          bottom: { xs: -130, sm: -170 },
-          left: { xs: -100, sm: -140 },
-          pointerEvents: "none",
-        }}
-      />
-
-      <Container
-        maxWidth="sm"
-        sx={{
+          flex: "1 0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           position: "relative",
-          zIndex: 1,
+          px: { xs: 1.5, sm: 2.5 },
+          // Less vertical whitespace on mobile.
+          py: { xs: 1.5, sm: 3, md: 4 },
+          minHeight: { xs: "auto", sm: "460px" },
         }}
       >
-        <MotionPaper
-          elevation={0}
-          initial={{ opacity: 0, y: 25, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+        <MotionBox
+          aria-hidden="true"
+          animate={{ y: [0, -10, 0], rotate: [0, 5, 0] }}
           transition={{
-            duration: 0.5,
-            ease: [0.22, 1, 0.36, 1],
+            duration: 9,
+            repeat: Infinity,
+            ease: "easeInOut",
           }}
           sx={{
-            width: "100%",
-            p: {
-              xs: 2.5,
-              sm: 4,
-              md: 5,
-            },
-            borderRadius: {
-              xs: 3,
-              sm: 4,
-            },
-            bgcolor: "#FFFFFF",
-            border: "1px solid #E9E9E9",
-            boxShadow: "0 24px 70px rgba(17,17,17,0.09)",
+            position: "absolute",
+            top: "10%",
+            left: { xs: "-50px", sm: "8%" },
+            width: { xs: 85, sm: 130 },
+            height: { xs: 85, sm: 130 },
+            border: "1px solid rgba(49,94,244,0.12)",
+            borderRadius: "10px",
+            pointerEvents: "none",
           }}
+        />
+
+        <MotionBox
+          aria-hidden="true"
+          animate={{ y: [0, 10, 0], rotate: [0, -6, 0] }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          sx={{
+            position: "absolute",
+            bottom: "8%",
+            right: { xs: "-35px", sm: "8%" },
+            width: { xs: 65, sm: 100 },
+            height: { xs: 65, sm: 100 },
+            border: "1px solid rgba(109,83,245,0.14)",
+            borderRadius: "50%",
+            pointerEvents: "none",
+          }}
+        />
+
+        <Container
+          maxWidth="xs"
+          disableGutters
+          sx={{ position: "relative", zIndex: 1, width: "100%" }}
         >
-          <Stack spacing={3}>
-            <Box sx={{ textAlign: "center" }}>
-              <Box
-                component="div"
-                sx={{
-                  width: { xs: 58, sm: 68 },
-                  height: { xs: 58, sm: 68 },
-                  borderRadius: 3,
-                  bgcolor: "#111111",
-                  color: "#F4C430",
-                  display: "grid",
-                  placeItems: "center",
-                  mx: "auto",
-                  mb: 2.5,
-                  boxShadow: "0 12px 28px rgba(17,17,17,0.16)",
-                }}
-              >
-                <AdminPanelSettingsRounded
+          <MotionPaper
+            elevation={0}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            sx={{
+              position: "relative",
+              overflow: "hidden",
+              width: "100%",
+              p: { xs: 1.8, sm: 3 },
+              border: "1px solid #e1e7f1",
+              borderRadius: { xs: "7px", sm: "9px" },
+              bgcolor: "rgba(255,255,255,0.97)",
+              boxShadow: "0 12px 38px rgba(30,55,110,0.08)",
+            }}
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                inset: "0 0 auto",
+                height: 3,
+                background: "linear-gradient(90deg,#315EF4,#7164F5,#9b8aff)",
+              }}
+            />
+
+            <Stack spacing={{ xs: 1.35, sm: 1.8 }}>
+              {/* Brand logos */}
+              <Box sx={{ textAlign: "center" }}>
+                <Box
+                  component="img"
+                  src={roundLogo}
+                  alt="Glyrus logo"
                   sx={{
-                    fontSize: {
-                      xs: 30,
-                      sm: 36,
-                    },
+                    display: "block",
+                    width: { xs: 70, sm: 70 },
+                    height: { xs: 70, sm: 70 },
+                    mx: "auto",
+                    objectFit: "contain",
                   }}
                 />
+
+                <Box
+                  component="img"
+                  src={nameLogo}
+                  alt="Glyrus"
+                  sx={{
+                    display: "block",
+                    width: { xs: 120, sm: 145 },
+                    height: { xs: 27, sm: 31 },
+                    objectFit: "contain",
+                    mx: "auto",
+                    mt: -0.8,
+                  }}
+                />
+
+                <Typography
+                  component="h1"
+                  sx={{
+                    mt: 0.65,
+                    fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                    lineHeight: 1.25,
+                    fontWeight: 750,
+                    letterSpacing: "-0.035em",
+                    color: "#182238",
+                  }}
+                >
+                  Admin sign in
+                </Typography>
+
+                <Typography
+                  sx={{
+                    mt: 0.45,
+                    color: "#758198",
+                    fontSize: { xs: "0.74rem", sm: "0.82rem" },
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Secure access to your Glyrus dashboard.
+                </Typography>
               </Box>
 
-              <Typography
-                component="h1"
+              {/* Login method tabs */}
+              <Box
                 sx={{
-                  fontSize: {
-                    xs: "1.65rem",
-                    sm: "2rem",
-                  },
-                  fontWeight: 900,
-                  letterSpacing: "-0.04em",
-                  color: "#111111",
-                  lineHeight: 1.1,
+                  p: 0.35,
+                  bgcolor: "#f1f4fa",
+                  border: "1px solid #e7ebf3",
+                  borderRadius: "5px",
                 }}
               >
-                Glyrus Admin
-              </Typography>
-
-              <Typography
-                sx={{
-                  mt: 1,
-                  color: "#777777",
-                  fontSize: {
-                    xs: "0.85rem",
-                    sm: "0.92rem",
-                  },
-                }}
-              >
-                Sign in to manage your store
-              </Typography>
-            </Box>
-
-            {error && (
-              <Alert
-                severity="error"
-                onClose={() => setError("")}
-                sx={{
-                  borderRadius: 2.5,
-                  fontSize: "0.84rem",
-                  fontWeight: 600,
-                }}
-              >
-                {error}
-              </Alert>
-            )}
-
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <Stack spacing={2.2}>
-                <TextField
-                  fullWidth
-                  label="Admin Email"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  autoComplete="email"
-                  disabled={loading}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <AdminPanelSettingsRounded
-                          sx={{
-                            color: "#A8A8A8",
-                            fontSize: 21,
-                          }}
-                        />
-                      </InputAdornment>
-                    ),
+                <Tabs
+                  value={method}
+                  onChange={(_, value) => {
+                    setMethod(value);
+                    setError("");
+                    setSuccess("");
                   }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={form.password}
-                  onChange={handleChange}
-                  autoComplete="current-password"
-                  disabled={loading}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockRounded
-                          sx={{
-                            color: "#A8A8A8",
-                            fontSize: 21,
-                          }}
-                        />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          type="button"
-                          edge="end"
-                          onClick={() =>
-                            setShowPassword((previous) => !previous)
-                          }
-                          disabled={loading}
-                          aria-label={
-                            showPassword ? "Hide password" : "Show password"
-                          }
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={rememberMe}
-                      onChange={(event) => setRememberMe(event.target.checked)}
-                      disabled={loading}
-                      sx={{
-                        color: "#C9C9C9",
-                        "&.Mui-checked": {
-                          color: "#F4C430",
-                        },
-                      }}
-                    />
-                  }
-                  label={
-                    <Typography
-                      sx={{
-                        fontSize: "0.84rem",
-                        color: "#666666",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Keep me signed in
-                    </Typography>
-                  }
+                  variant="fullWidth"
+                  TabIndicatorProps={{ style: { display: "none" } }}
                   sx={{
-                    mx: 0,
-                    width: "fit-content",
-                  }}
-                />
-
-                <Button
-                  fullWidth
-                  type="submit"
-                  variant="contained"
-                  disabled={loading}
-                  endIcon={!loading ? <ArrowForwardRounded /> : undefined}
-                  sx={{
-                    minHeight: 52,
-                    borderRadius: 3,
-                    bgcolor: "#F4C430",
-                    color: "#111111",
-                    fontSize: "0.94rem",
-                    fontWeight: 900,
-                    "&:hover": {
-                      bgcolor: "#E4B400",
-                      transform: "translateY(-1px)",
-                      boxShadow: "0 12px 26px rgba(244,196,48,0.25)",
+                    minHeight: 36,
+                    "& .MuiTabs-flexContainer": { gap: 0.4 },
+                    "& .MuiTab-root": {
+                      minHeight: 35,
+                      minWidth: 0,
+                      px: 0.5,
+                      py: 0.4,
+                      color: "#68758b",
+                      fontSize: { xs: "0.77rem", sm: "0.82rem" },
+                      fontWeight: 750,
+                      textTransform: "none",
+                      borderRadius: "4px",
                     },
-                    "&:disabled": {
-                      bgcolor: "#EAEAEA",
-                      color: "#999999",
+                    "& .MuiTab-root.Mui-selected": {
+                      color: "#2855e9",
+                      bgcolor: "#fff",
+                      boxShadow: "0 1px 4px rgba(25,45,90,0.08)",
                     },
                   }}
                 >
-                  {loading ? (
-                    <CircularProgress
-                      size={23}
-                      thickness={4}
+                  <Tab disableRipple label="Google" />
+                  <Tab disableRipple label="Email OTP" />
+                </Tabs>
+              </Box>
+
+              <AnimatePresence mode="wait">
+                {error && (
+                  <MotionBox
+                    key="error"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <Alert
+                      severity="error"
+                      onClose={() => setError("")}
                       sx={{
-                        color: "#555555",
+                        py: 0,
+                        px: 0.8,
+                        borderRadius: "4px",
+                        fontSize: "0.76rem",
+                        alignItems: "center",
+                        overflowWrap: "anywhere",
+                        "& .MuiAlert-icon": { fontSize: 18 },
+                        "& .MuiAlert-message": { py: 0.7 },
                       }}
+                    >
+                      {error}
+                    </Alert>
+                  </MotionBox>
+                )}
+
+                {success && (
+                  <MotionBox
+                    key="success"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <Alert
+                      severity="success"
+                      onClose={() => setSuccess("")}
+                      sx={{
+                        py: 0,
+                        px: 0.8,
+                        borderRadius: "4px",
+                        fontSize: "0.76rem",
+                        "& .MuiAlert-icon": { fontSize: 18 },
+                        "& .MuiAlert-message": { py: 0.7 },
+                      }}
+                    >
+                      {success}
+                    </Alert>
+                  </MotionBox>
+                )}
+              </AnimatePresence>
+
+              {/* Google login */}
+              {method === 0 && (
+                <MotionBox
+                  key="google"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={handleGoogleLogin}
+                    disabled={googleLoading || loading}
+                    startIcon={
+                      googleLoading ? (
+                        <CircularProgress size={17} />
+                      ) : (
+                        <Box
+                          component="span"
+                          sx={{
+                            color: "#4285F4",
+                            fontWeight: 900,
+                            fontSize: "1.05rem",
+                            lineHeight: 1,
+                          }}
+                        >
+                          G
+                        </Box>
+                      )
+                    }
+                    sx={{
+                      minHeight: { xs: 41, sm: 44 },
+                      borderRadius: "5px",
+                      borderColor: "#d8deea",
+                      color: "#263247",
+                      bgcolor: "#fff",
+                      fontSize: { xs: "0.8rem", sm: "0.85rem" },
+                      fontWeight: 700,
+                      textTransform: "none",
+                      "&:hover": {
+                        bgcolor: "#f7f9ff",
+                        borderColor: "#9eb2f7",
+                      },
+                    }}
+                  >
+                    {googleLoading
+                      ? "Connecting to Google..."
+                      : "Continue with Google"}
+                  </Button>
+
+                  <Typography
+                    sx={{
+                      mt: 1,
+                      textAlign: "center",
+                      color: "#8490a4",
+                      fontSize: "0.72rem",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Use your authorized administrator account.
+                  </Typography>
+                </MotionBox>
+              )}
+
+              {/* Email OTP login */}
+              {method === 1 && (
+                <MotionBox
+                  key="email"
+                  component="form"
+                  onSubmit={otpSent ? handleVerifyOtp : handleRequestOtp}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Stack spacing={1.2}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Admin email address"
+                      type="email"
+                      value={email}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        setError("");
+                        setSuccess("");
+                      }}
+                      autoComplete="email"
+                      required
+                      disabled={loading || otpSent}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EmailOutlined
+                              sx={{ color: "#8290a5", fontSize: 19 }}
+                            />
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={fieldSx}
                     />
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
+
+                    {otpSent && (
+                      <>
+                        <Typography
+                          sx={{
+                            color: "#6d798e",
+                            fontSize: "0.75rem",
+                            lineHeight: 1.5,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          Enter the 6-digit code sent to{" "}
+                          <Box component="strong" sx={{ color: "#243149" }}>
+                            {email.trim().toLowerCase()}
+                          </Box>
+                        </Typography>
+
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="6-digit OTP"
+                          value={otp}
+                          onChange={(event) => {
+                            setOtp(
+                              event.target.value.replace(/\D/g, "").slice(0, 6),
+                            );
+                            setError("");
+                          }}
+                          inputProps={{
+                            inputMode: "numeric",
+                            maxLength: 6,
+                            autoComplete: "one-time-code",
+                            style: {
+                              textAlign: "center",
+                              letterSpacing: "0.35em",
+                              fontSize: "1rem",
+                              fontWeight: 800,
+                            },
+                          }}
+                          required
+                          disabled={loading}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <LockOutlined
+                                  sx={{ color: "#8290a5", fontSize: 19 }}
+                                />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={fieldSx}
+                        />
+                      </>
+                    )}
+
+                    <Button
+                      fullWidth
+                      type="submit"
+                      variant="contained"
+                      disabled={loading || (otpSent && otp.length !== 6)}
+                      endIcon={!loading ? <ArrowForwardRounded /> : undefined}
+                      sx={{
+                        minHeight: { xs: 41, sm: 44 },
+                        borderRadius: "5px",
+                        background: "linear-gradient(100deg,#315EF4,#5149EC)",
+                        fontSize: { xs: "0.8rem", sm: "0.85rem" },
+                        fontWeight: 750,
+                        textTransform: "none",
+                        boxShadow: "0 4px 12px rgba(49,94,244,0.15)",
+                        "&:hover": {
+                          background: "linear-gradient(100deg,#244FE0,#433AD8)",
+                        },
+                      }}
+                    >
+                      {loading ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : otpSent ? (
+                        "Verify OTP & Sign In"
+                      ) : (
+                        "Continue with Email OTP"
+                      )}
+                    </Button>
+
+                    {otpSent && (
+                      <Button
+                        size="small"
+                        startIcon={<ArrowBackRounded />}
+                        onClick={() => {
+                          setOtpSent(false);
+                          setOtp("");
+                          setError("");
+                          setSuccess("");
+                        }}
+                        disabled={loading}
+                        sx={{
+                          alignSelf: "center",
+                          color: "#6c7890",
+                          fontSize: "0.75rem",
+                          textTransform: "none",
+                        }}
+                      >
+                        Change email address
+                      </Button>
+                    )}
+                  </Stack>
+                </MotionBox>
+              )}
+
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="center"
+                spacing={0.65}
+                sx={{
+                  pt: 1,
+                  borderTop: "1px solid #edf0f6",
+                }}
+              >
+                <SecurityRounded sx={{ color: "#169b62", fontSize: 17 }} />
+                <Typography
+                  sx={{
+                    color: "#718098",
+                    fontSize: { xs: "0.68rem", sm: "0.74rem" },
+                    textAlign: "center",
+                  }}
+                >
+                  Protected sign-in · Authorized admins only
+                </Typography>
               </Stack>
-            </Box>
+            </Stack>
+          </MotionPaper>
+        </Container>
+      </Box>
 
-            <Box
-              sx={{
-                pt: 1,
-                textAlign: "center",
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "0.72rem",
-                  color: "#999999",
-                  lineHeight: 1.5,
-                }}
-              >
-                Authorized access only
-              </Typography>
-
-              <Typography
-                sx={{
-                  mt: 0.5,
-                  fontSize: "0.7rem",
-                  color: "#B0B0B0",
-                }}
-              >
-                Glyrus Store Management
-              </Typography>
-            </Box>
-          </Stack>
-        </MotionPaper>
-      </Container>
+      {/* Use the existing website footer */}
+      <Footer />
     </Box>
   );
 };

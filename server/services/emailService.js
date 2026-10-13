@@ -6,18 +6,12 @@ import nodemailer from "nodemailer";
    SMTP CONFIGURATION
 ======================================================= */
 
-const smtpPort =
-  Number(process.env.SMTP_PORT) || 587;
+const smtpPort = Number(process.env.SMTP_PORT) || 587;
 
-const smtpPassword =
-  process.env.SMTP_PASSWORD ||
-  process.env.SMTP_PASS ||
-  "";
+const smtpPassword = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || "";
 
 const transporter =
-  process.env.SMTP_HOST &&
-  process.env.SMTP_USER &&
-  smtpPassword
+  process.env.SMTP_HOST && process.env.SMTP_USER && smtpPassword
     ? nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: smtpPort,
@@ -54,30 +48,19 @@ const escapeHtml = (value) =>
     .replace(/'/g, "&#039;");
 
 const getCustomerName = (order) =>
-  order?.customer?.name ||
-  order?.customerName ||
-  order?.name ||
-  "Customer";
+  order?.customer?.name || order?.customerName || order?.name || "Customer";
 
 const getCustomerEmail = (order) =>
-  order?.customer?.email ||
-  order?.email ||
-  "";
+  order?.customer?.email || order?.email || "";
 
 const getOrderItems = (order) =>
-  Array.isArray(order?.items)
-    ? order.items
-    : [];
+  Array.isArray(order?.items) ? order.items : [];
 
 /* =======================================================
    EMAIL LAYOUT
 ======================================================= */
 
-const emailLayout = ({
-  title,
-  preheader = "",
-  content,
-}) => `
+const emailLayout = ({ title, preheader = "", content }) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -205,29 +188,18 @@ const emailLayout = ({
 
 const ensureTransporter = () => {
   if (!transporter) {
-    throw new Error(
-      "SMTP configuration is incomplete."
-    );
+    throw new Error("SMTP configuration is incomplete.");
   }
 
   return transporter;
 };
 
-const sendEmail = async ({
-  to,
-  subject,
-  html,
-  text,
-  replyTo,
-}) => {
+const sendEmail = async ({ to, subject, html, text, replyTo }) => {
   if (!to) {
-    throw new Error(
-      "Recipient email is required."
-    );
+    throw new Error("Recipient email is required.");
   }
 
-  const mailer =
-    ensureTransporter();
+  const mailer = ensureTransporter();
 
   return mailer.sendMail({
     from: getFromAddress(),
@@ -235,9 +207,7 @@ const sendEmail = async ({
     subject,
     text,
     html,
-    ...(replyTo
-      ? { replyTo }
-      : {}),
+    ...(replyTo ? { replyTo } : {}),
   });
 };
 
@@ -245,9 +215,7 @@ const sendEmail = async ({
    ORDER ITEMS
 ======================================================= */
 
-const buildItemsHtml = (
-  items
-) =>
+const buildItemsHtml = (items) =>
   items
     .map(
       (item) => `
@@ -259,11 +227,7 @@ const buildItemsHtml = (
             "
           >
             <strong>
-              ${escapeHtml(
-                item.name ||
-                  item.title ||
-                  "Glyrus Product"
-              )}
+              ${escapeHtml(item.name || item.title || "Glyrus Product")}
             </strong>
 
             ${
@@ -278,12 +242,9 @@ const buildItemsHtml = (
                   >
                     Customization:
                     ${escapeHtml(
-                      typeof item.customization ===
-                      "object"
-                        ? JSON.stringify(
-                            item.customization
-                          )
-                        : item.customization
+                      typeof item.customization === "object"
+                        ? JSON.stringify(item.customization)
+                        : item.customization,
                     )}
                   </div>
                 `
@@ -308,13 +269,10 @@ const buildItemsHtml = (
               border-bottom:1px solid #eeeeee;
             "
           >
-            ${formatCurrency(
-              Number(item.price) *
-                (Number(item.quantity) || 1)
-            )}
+            ${formatCurrency(Number(item.price) * (Number(item.quantity) || 1))}
           </td>
         </tr>
-      `
+      `,
     )
     .join("");
 
@@ -322,9 +280,7 @@ const buildItemsHtml = (
    ADDRESS
 ======================================================= */
 
-const buildAddressHtml = (
-  address
-) => {
+const buildAddressHtml = (address) => {
   if (!address) {
     return "";
   }
@@ -348,51 +304,21 @@ const buildAddressHtml = (
           line-height:1.7;
         "
       >
-        ${escapeHtml(
-          address.name || ""
-        )}<br />
+        ${escapeHtml(address.name || "")}<br />
 
-        ${escapeHtml(
-          address.house ||
-            address.houseFlat ||
-            ""
-        )}
+        ${escapeHtml(address.house || address.houseFlat || "")}
 
-        ${
-          address.street
-            ? `<br />${escapeHtml(
-                address.street
-              )}`
-            : ""
-        }
+        ${address.street ? `<br />${escapeHtml(address.street)}` : ""}
 
-        ${
-          address.area
-            ? `<br />${escapeHtml(
-                address.area
-              )}`
-            : ""
-        }
+        ${address.area ? `<br />${escapeHtml(address.area)}` : ""}
 
         <br />
 
-        ${escapeHtml(
-          address.city || ""
-        )},
-        ${escapeHtml(
-          address.state || ""
-        )}
-        - ${escapeHtml(
-          address.pincode || ""
-        )}
+        ${escapeHtml(address.city || "")},
+        ${escapeHtml(address.state || "")}
+        - ${escapeHtml(address.pincode || "")}
 
-        ${
-          address.mobile
-            ? `<br />Mobile: ${escapeHtml(
-                address.mobile
-              )}`
-            : ""
-        }
+        ${address.mobile ? `<br />Mobile: ${escapeHtml(address.mobile)}` : ""}
       </div>
     </div>
   `;
@@ -402,39 +328,16 @@ const buildAddressHtml = (
    ORDER SUMMARY
 ======================================================= */
 
-const buildOrderSummaryHtml = (
-  order
-) => {
-  const pricing =
-    order?.pricing || {};
+const buildOrderSummaryHtml = (order) => {
+  const pricing = order?.pricing || {};
 
-  const subtotal =
-    Number(
-      pricing.subtotal ??
-        order?.subtotal ??
-        0
-    ) || 0;
+  const subtotal = Number(pricing.subtotal ?? order?.subtotal ?? 0) || 0;
 
-  const discount =
-    Number(
-      pricing.discount ??
-        order?.discount ??
-        0
-    ) || 0;
+  const discount = Number(pricing.discount ?? order?.discount ?? 0) || 0;
 
-  const shipping =
-    Number(
-      pricing.shipping ??
-        order?.shippingCharge ??
-        0
-    ) || 0;
+  const shipping = Number(pricing.shipping ?? order?.shippingCharge ?? 0) || 0;
 
-  const codCharge =
-    Number(
-      pricing.codCharge ??
-        order?.codCharge ??
-        0
-    ) || 0;
+  const codCharge = Number(pricing.codCharge ?? order?.codCharge ?? 0) || 0;
 
   const total =
     Number(
@@ -442,7 +345,7 @@ const buildOrderSummaryHtml = (
         pricing.total ??
         order?.totalAmount ??
         order?.total ??
-        0
+        0,
     ) || 0;
 
   return `
@@ -464,9 +367,7 @@ const buildOrderSummaryHtml = (
           align="right"
           style="padding:7px 0;"
         >
-          ${formatCurrency(
-            subtotal
-          )}
+          ${formatCurrency(subtotal)}
         </td>
       </tr>
 
@@ -490,9 +391,7 @@ const buildOrderSummaryHtml = (
                   color:#188038;
                 "
               >
-                -${formatCurrency(
-                  discount
-                )}
+                -${formatCurrency(discount)}
               </td>
             </tr>
           `
@@ -508,13 +407,7 @@ const buildOrderSummaryHtml = (
           align="right"
           style="padding:7px 0;"
         >
-          ${
-            shipping === 0
-              ? "FREE"
-              : formatCurrency(
-                  shipping
-                )
-          }
+          ${shipping === 0 ? "FREE" : formatCurrency(shipping)}
         </td>
       </tr>
 
@@ -530,9 +423,7 @@ const buildOrderSummaryHtml = (
                 align="right"
                 style="padding:7px 0;"
               >
-                ${formatCurrency(
-                  codCharge
-                )}
+                ${formatCurrency(codCharge)}
               </td>
             </tr>
           `
@@ -560,9 +451,7 @@ const buildOrderSummaryHtml = (
             font-weight:700;
           "
         >
-          ${formatCurrency(
-            total
-          )}
+          ${formatCurrency(total)}
         </td>
       </tr>
     </table>
@@ -573,38 +462,27 @@ const buildOrderSummaryHtml = (
    ORDER CONFIRMATION
 ======================================================= */
 
-export const sendOrderConfirmationEmail =
-  async (order) => {
-    const email =
-      getCustomerEmail(order);
+export const sendOrderConfirmationEmail = async (order) => {
+  const email = getCustomerEmail(order);
 
-    if (!email) {
-      return null;
-    }
+  if (!email) {
+    return null;
+  }
 
-    const name =
-      getCustomerName(order);
+  const name = getCustomerName(order);
 
-    const items =
-      getOrderItems(order);
+  const items = getOrderItems(order);
 
-    const orderNumber =
-      order?.orderNumber ||
-      "N/A";
+  const orderNumber = order?.orderNumber || "N/A";
 
-    const trackingNumber =
-      order?.trackingNumber ||
-      "Will be generated shortly";
+  const trackingNumber = order?.trackingNumber || "Will be generated shortly";
 
-    const html =
-      emailLayout({
-        title:
-          "Order Confirmation",
+  const html = emailLayout({
+    title: "Order Confirmation",
 
-        preheader:
-          `Your Glyrus order ${orderNumber} has been received.`,
+    preheader: `Your Glyrus order ${orderNumber} has been received.`,
 
-        content: `
+    content: `
           <h1
             style="
               margin:0 0 12px;
@@ -615,9 +493,7 @@ export const sendOrderConfirmationEmail =
           </h1>
 
           <p>
-            Hello ${escapeHtml(
-              name
-            )},
+            Hello ${escapeHtml(name)},
           </p>
 
           <p>
@@ -634,15 +510,11 @@ export const sendOrderConfirmationEmail =
             "
           >
             <strong>Order Number:</strong>
-            ${escapeHtml(
-              orderNumber
-            )}
+            ${escapeHtml(orderNumber)}
             <br />
 
             <strong>Tracking Number:</strong>
-            ${escapeHtml(
-              trackingNumber
-            )}
+            ${escapeHtml(trackingNumber)}
           </div>
 
           <table
@@ -689,31 +561,23 @@ export const sendOrderConfirmationEmail =
             </thead>
 
             <tbody>
-              ${buildItemsHtml(
-                items
-              )}
+              ${buildItemsHtml(items)}
             </tbody>
           </table>
 
-          ${buildOrderSummaryHtml(
-            order
-          )}
+          ${buildOrderSummaryHtml(order)}
 
-          ${buildAddressHtml(
-            order?.address
-          )}
+          ${buildAddressHtml(order?.address)}
         `,
-      });
+  });
 
-    return sendEmail({
-      to: email,
-      subject:
-        `Glyrus Order Confirmed - ${orderNumber}`,
-      html,
-      text:
-        `Your Glyrus order ${orderNumber} has been confirmed. Tracking number: ${trackingNumber}.`,
-    });
-  };
+  return sendEmail({
+    to: email,
+    subject: `Glyrus Order Confirmed - ${orderNumber}`,
+    html,
+    text: `Your Glyrus order ${orderNumber} has been confirmed. Tracking number: ${trackingNumber}.`,
+  });
+};
 
 /* =======================================================
    PAYMENT CONFIRMATION
@@ -729,23 +593,16 @@ export const sendPaymentConfirmationEmail = async (order) => {
   const name = getCustomerName(order);
   const items = getOrderItems(order);
 
-  const orderNumber =
-    order?.orderNumber || "N/A";
+  const orderNumber = order?.orderNumber || "N/A";
 
-  const trackingNumber =
-    order?.trackingNumber || "Will be generated shortly";
+  const trackingNumber = order?.trackingNumber || "Will be generated shortly";
 
   const paymentId =
-    order?.payment?.razorpayPaymentId ||
-    order?.razorpayPaymentId ||
-    "N/A";
+    order?.payment?.razorpayPaymentId || order?.razorpayPaymentId || "N/A";
 
-  const paymentMethod =
-    String(
-      order?.paymentMethod ||
-        order?.payment?.method ||
-        ""
-    ).toUpperCase();
+  const paymentMethod = String(
+    order?.paymentMethod || order?.payment?.method || "",
+  ).toUpperCase();
 
   const amountPaid =
     Number(
@@ -754,56 +611,36 @@ export const sendPaymentConfirmationEmail = async (order) => {
         order?.pricing?.total ??
         order?.totalAmount ??
         order?.total ??
-        0
+        0,
     ) || 0;
 
   const orderTotal =
-    Number(
-      order?.pricing?.total ??
-        order?.totalAmount ??
-        order?.total ??
-        0
-    ) || 0;
+    Number(order?.pricing?.total ?? order?.totalAmount ?? order?.total ?? 0) ||
+    0;
 
   const codCharge =
-    Number(
-      order?.pricing?.codCharge ??
-        order?.codCharge ??
-        0
-    ) || 0;
+    Number(order?.pricing?.codCharge ?? order?.codCharge ?? 0) || 0;
 
   const remainingCodAmount =
-    paymentMethod === "COD"
-      ? Math.max(0, orderTotal - amountPaid)
-      : 0;
+    paymentMethod === "COD" ? Math.max(0, orderTotal - amountPaid) : 0;
 
-  const paymentDate =
-    order?.payment?.paidAt
-      ? new Date(order.payment.paidAt).toLocaleString(
-          "en-IN",
-          {
-            dateStyle: "medium",
-            timeStyle: "short",
-          }
-        )
-      : new Date().toLocaleString(
-          "en-IN",
-          {
-            dateStyle: "medium",
-            timeStyle: "short",
-          }
-        );
+  const paymentDate = order?.payment?.paidAt
+    ? new Date(order.payment.paidAt).toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : new Date().toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
 
   const trackingUrl =
-    order?.shippingInformation?.trackingUrl ||
-    order?.trackingUrl ||
-    "";
+    order?.shippingInformation?.trackingUrl || order?.trackingUrl || "";
 
   const html = emailLayout({
     title: "Payment Confirmation",
 
-    preheader:
-      `Payment received successfully for Glyrus order ${orderNumber}.`,
+    preheader: `Payment received successfully for Glyrus order ${orderNumber}.`,
 
     content: `
       <h1
@@ -848,9 +685,7 @@ export const sendPaymentConfirmationEmail = async (order) => {
 
         <strong>Payment Method:</strong>
         ${escapeHtml(
-          paymentMethod === "COD"
-            ? "COD + Online COD Charge"
-            : "Razorpay"
+          paymentMethod === "COD" ? "COD + Online COD Charge" : "Razorpay",
         )}
         <br /><br />
 
@@ -1069,9 +904,7 @@ Order Number: ${orderNumber}
 Tracking Number: ${trackingNumber}
 Payment Date: ${paymentDate}
 Payment Method: ${
-    paymentMethod === "COD"
-      ? "COD + Online COD Charge"
-      : "Razorpay"
+    paymentMethod === "COD" ? "COD + Online COD Charge" : "Razorpay"
   }
 Payment ID: ${paymentId}
 
@@ -1080,9 +913,7 @@ Amount Paid: ${formatCurrency(amountPaid)}
 ${
   paymentMethod === "COD"
     ? `COD Charge Paid Online: ${formatCurrency(codCharge)}
-Remaining Amount on Delivery: ${formatCurrency(
-        remainingCodAmount
-      )}`
+Remaining Amount on Delivery: ${formatCurrency(remainingCodAmount)}`
     : ""
 }
 
@@ -1093,8 +924,7 @@ Thank you for shopping with Glyrus.
 
   return sendEmail({
     to: email,
-    subject:
-      `Payment Confirmed - Glyrus ${orderNumber}`,
+    subject: `Payment Confirmed - Glyrus ${orderNumber}`,
     html,
     text,
   });
@@ -1104,84 +934,53 @@ Thank you for shopping with Glyrus.
    ORDER STATUS EMAIL
 ======================================================= */
 
-export const sendOrderStatusEmail =
-  async (
-    order,
-    status,
-    options = {}
-  ) => {
-    const email =
-      getCustomerEmail(order);
+export const sendOrderStatusEmail = async (order, status, options = {}) => {
+  const email = getCustomerEmail(order);
 
-    if (!email) {
-      return null;
-    }
+  if (!email) {
+    return null;
+  }
 
-    const name =
-      getCustomerName(order);
+  const name = getCustomerName(order);
 
-    const orderNumber =
-      order?.orderNumber ||
-      "N/A";
+  const orderNumber = order?.orderNumber || "N/A";
 
-    const trackingNumber =
-      order?.trackingNumber ||
-      "";
+  const trackingNumber = order?.trackingNumber || "";
 
-    const trackingUrl =
-      typeof options ===
-        "object" &&
-      options !== null
-        ? options.trackingUrl ||
-          order?.shippingInformation
-            ?.trackingUrl ||
-          ""
-        : order?.shippingInformation
-            ?.trackingUrl ||
-          "";
+  const trackingUrl =
+    typeof options === "object" && options !== null
+      ? options.trackingUrl || order?.shippingInformation?.trackingUrl || ""
+      : order?.shippingInformation?.trackingUrl || "";
 
-    const statusMessages = {
-      Pending:
-        "Your order has been received and is awaiting confirmation.",
+  const statusMessages = {
+    Pending: "Your order has been received and is awaiting confirmation.",
 
-      Confirmed:
-        "Your order has been confirmed and is being prepared.",
+    Confirmed: "Your order has been confirmed and is being prepared.",
 
-      Customization:
-        "Your customized NFC product is being prepared.",
+    Customization: "Your customized NFC product is being prepared.",
 
-      Production:
-        "Your order has entered production.",
+    Production: "Your order has entered production.",
 
-      Packed:
-        "Your order has been packed and is ready for shipment.",
+    Packed: "Your order has been packed and is ready for shipment.",
 
-      Shipped:
-        "Your order has been shipped.",
+    Shipped: "Your order has been shipped.",
 
-      "Out for Delivery":
-        "Your order is out for delivery.",
+    "Out for Delivery": "Your order is out for delivery.",
 
-      Delivered:
-        "Your order has been delivered successfully.",
+    Delivered: "Your order has been delivered successfully.",
 
-      Cancelled:
-        "Your order has been cancelled.",
+    Cancelled: "Your order has been cancelled.",
 
-      Returned:
-        "Your order has been marked as returned.",
+    Returned: "Your order has been marked as returned.",
 
-      Refunded:
-        "Your order has been refunded.",
-    };
+    Refunded: "Your order has been refunded.",
+  };
 
-    const message =
-      statusMessages[status] ||
-      `Your order status is now ${status}.`;
+  const message =
+    statusMessages[status] || `Your order status is now ${status}.`;
 
-    const trackingSection =
-      trackingNumber
-        ? `
+  const trackingSection = trackingNumber
+    ? `
           <div
             style="
               margin:22px 0;
@@ -1194,18 +993,14 @@ export const sendOrderStatusEmail =
               Tracking Number:
             </strong>
 
-            ${escapeHtml(
-              trackingNumber
-            )}
+            ${escapeHtml(trackingNumber)}
 
             ${
               trackingUrl
                 ? `
                   <div style="margin-top:12px;">
                     <a
-                      href="${escapeHtml(
-                        trackingUrl
-                      )}"
+                      href="${escapeHtml(trackingUrl)}"
                       style="
                         display:inline-block;
                         padding:11px 18px;
@@ -1224,17 +1019,14 @@ export const sendOrderStatusEmail =
             }
           </div>
         `
-        : "";
+    : "";
 
-    const html =
-      emailLayout({
-        title:
-          `Order ${status}`,
+  const html = emailLayout({
+    title: `Order ${status}`,
 
-        preheader:
-          `Glyrus order ${orderNumber} is now ${status}.`,
+    preheader: `Glyrus order ${orderNumber} is now ${status}.`,
 
-        content: `
+    content: `
           <h1
             style="
               margin:0 0 12px;
@@ -1245,15 +1037,11 @@ export const sendOrderStatusEmail =
           </h1>
 
           <p>
-            Hello ${escapeHtml(
-              name
-            )},
+            Hello ${escapeHtml(name)},
           </p>
 
           <p>
-            ${escapeHtml(
-              message
-            )}
+            ${escapeHtml(message)}
           </p>
 
           <div
@@ -1268,9 +1056,7 @@ export const sendOrderStatusEmail =
               Current Status:
             </strong>
 
-            ${escapeHtml(
-              status
-            )}
+            ${escapeHtml(status)}
 
             <br />
 
@@ -1278,100 +1064,69 @@ export const sendOrderStatusEmail =
               Order Number:
             </strong>
 
-            ${escapeHtml(
-              orderNumber
-            )}
+            ${escapeHtml(orderNumber)}
           </div>
 
           ${trackingSection}
         `,
-      });
+  });
 
-    return sendEmail({
-      to: email,
-      subject:
-        `Glyrus Order ${status} - ${orderNumber}`,
-      html,
-      text:
-        `Your Glyrus order ${orderNumber} is now ${status}. ${message}`,
-    });
-  };
+  return sendEmail({
+    to: email,
+    subject: `Glyrus Order ${status} - ${orderNumber}`,
+    html,
+    text: `Your Glyrus order ${orderNumber} is now ${status}. ${message}`,
+  });
+};
 
 /* =======================================================
    CANCELLATION
 ======================================================= */
 
-export const sendCancellationEmail =
-  async (order) =>
-    sendOrderStatusEmail(
-      order,
-      "Cancelled"
-    );
+export const sendCancellationEmail = async (order) =>
+  sendOrderStatusEmail(order, "Cancelled");
 
 /* =======================================================
    REFUND
 ======================================================= */
 
-export const sendRefundEmail =
-  async (order) =>
-    sendOrderStatusEmail(
-      order,
-      "Refunded"
-    );
+export const sendRefundEmail = async (order) =>
+  sendOrderStatusEmail(order, "Refunded");
 
 /* =======================================================
    CANCELLATION / REFUND
    COMPATIBILITY EXPORT
 ======================================================= */
 
-export const sendCancellationRefundEmail =
-  async (
-    order,
-    status
-  ) => {
-    const normalizedStatus =
-      status === "Refunded"
-        ? "Refunded"
-        : "Cancelled";
+export const sendCancellationRefundEmail = async (order, status) => {
+  const normalizedStatus = status === "Refunded" ? "Refunded" : "Cancelled";
 
-    return sendOrderStatusEmail(
-      order,
-      normalizedStatus
-    );
-  };
+  return sendOrderStatusEmail(order, normalizedStatus);
+};
 
 /* =======================================================
    SUPPORT EMAIL
 ======================================================= */
 
-export const sendSupportEmail =
-  async ({
-    name,
-    email,
-    mobile = "",
-    subject =
-      "Glyrus Support Request",
-    message,
-  }) => {
-    const supportEmail =
-      process.env.SUPPORT_EMAIL ||
-      process.env.SMTP_USER;
+export const sendSupportEmail = async ({
+  name,
+  email,
+  mobile = "",
+  subject = "Glyrus Support Request",
+  message,
+}) => {
+  const supportEmail = process.env.SUPPORT_EMAIL || process.env.SMTP_USER;
 
-    if (!supportEmail) {
-      throw new Error(
-        "SUPPORT_EMAIL or SMTP_USER must be configured."
-      );
-    }
+  if (!supportEmail) {
+    throw new Error("SUPPORT_EMAIL or SMTP_USER must be configured.");
+  }
 
-    const html =
-      emailLayout({
-        title:
-          "New Support Request",
+  const html = emailLayout({
+    title: "New Support Request",
 
-        preheader:
-          "A new Glyrus support request has been received.",
+    preheader: "A new Glyrus support request has been received.",
 
-        content: `
+    content: `
           <h1
             style="
               margin:0 0 20px;
@@ -1396,9 +1151,7 @@ export const sendSupportEmail =
               ? `
                 <p>
                   <strong>Mobile:</strong>
-                  ${escapeHtml(
-                    mobile
-                  )}
+                  ${escapeHtml(mobile)}
                 </p>
               `
               : ""
@@ -1406,9 +1159,7 @@ export const sendSupportEmail =
 
           <p>
             <strong>Subject:</strong>
-            ${escapeHtml(
-              subject
-            )}
+            ${escapeHtml(subject)}
           </p>
 
           <div
@@ -1429,54 +1180,43 @@ export const sendSupportEmail =
                 white-space:pre-wrap;
               "
             >
-              ${escapeHtml(
-                message
-              )}
+              ${escapeHtml(message)}
             </p>
           </div>
         `,
-      });
+  });
 
-    return sendEmail({
-      to: supportEmail,
-      replyTo: email,
-      subject,
-      html,
-      text:
-        `Support request from ${name} (${email}): ${message}`,
-    });
-  };
+  return sendEmail({
+    to: supportEmail,
+    replyTo: email,
+    subject,
+    html,
+    text: `Support request from ${name} (${email}): ${message}`,
+  });
+};
 
 /* =======================================================
    NFC REQUEST NOTIFICATION
 ======================================================= */
 
-export const sendRequestNotificationEmail =
-  async ({
-    name,
-    email,
-    mobile,
-    requirement,
-  }) => {
-    const supportEmail =
-      process.env.SUPPORT_EMAIL ||
-      process.env.SMTP_USER;
+export const sendRequestNotificationEmail = async ({
+  name,
+  email,
+  mobile,
+  requirement,
+}) => {
+  const supportEmail = process.env.SUPPORT_EMAIL || process.env.SMTP_USER;
 
-    if (!supportEmail) {
-      throw new Error(
-        "SUPPORT_EMAIL or SMTP_USER must be configured."
-      );
-    }
+  if (!supportEmail) {
+    throw new Error("SUPPORT_EMAIL or SMTP_USER must be configured.");
+  }
 
-    const html =
-      emailLayout({
-        title:
-          "New NFC Request",
+  const html = emailLayout({
+    title: "New NFC Request",
 
-        preheader:
-          "A new NFC product request has been submitted.",
+    preheader: "A new NFC product request has been submitted.",
 
-        content: `
+    content: `
           <h1
             style="
               margin:0 0 20px;
@@ -1519,36 +1259,53 @@ export const sendRequestNotificationEmail =
                 white-space:pre-wrap;
               "
             >
-              ${escapeHtml(
-                requirement
-              )}
+              ${escapeHtml(requirement)}
             </p>
           </div>
         `,
-      });
+  });
 
-    return sendEmail({
-      to: supportEmail,
-      replyTo: email,
-      subject:
-        `New Glyrus NFC Request - ${name}`,
-      html,
-      text:
-        `New NFC request from ${name} (${email}). Requirement: ${requirement}`,
-    });
-  };
+  return sendEmail({
+    to: supportEmail,
+    replyTo: email,
+    subject: `New Glyrus NFC Request - ${name}`,
+    html,
+    text: `New NFC request from ${name} (${email}). Requirement: ${requirement}`,
+  });
+};
 
 /* =======================================================
    SMTP CONNECTION TEST
 ======================================================= */
 
-export const verifyEmailConnection =
-  async () => {
-    const mailer =
-      ensureTransporter();
+export const verifyEmailConnection = async () => {
+  const mailer = ensureTransporter();
 
-    return mailer.verify();
-  };
+  return mailer.verify();
+};
+
+export const sendAdminLoginOtpEmail = async (email, otp) => {
+  const html = emailLayout({
+    title: "Admin Login Verification",
+    preheader: "Your Glyrus admin login verification code.",
+    content: `
+      <h2 style="margin:0 0 16px;">Verify Your Login</h2>
+      <p>Your one-time password (OTP) for Glyrus Admin is:</p>
+      <div style="margin:24px 0;padding:20px;background:#fff8d9;border-radius:12px;text-align:center;">
+        <strong style="font-size:32px;letter-spacing:8px;">${escapeHtml(otp)}</strong>
+      </div>
+      <p>This code expires in 5 minutes. Do not share it with anyone.</p>
+      <p>If you did not request this code, you can ignore this email.</p>
+    `,
+  });
+
+  return sendEmail({
+    to: email,
+    subject: "Glyrus Admin Login OTP",
+    html,
+    text: `Your Glyrus Admin login OTP is ${otp}. It expires in 5 minutes. Do not share this code.`,
+  });
+};
 
 /* =======================================================
    DEFAULT EXPORT
@@ -1564,4 +1321,5 @@ export default {
   sendSupportEmail,
   sendRequestNotificationEmail,
   verifyEmailConnection,
+  sendAdminLoginOtpEmail,
 };

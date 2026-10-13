@@ -35,20 +35,24 @@ app.use(
     crossOriginResourcePolicy: {
       policy: "cross-origin",
     },
-  })
+  }),
 );
 
 /* -------------------------------------------------------
    CORS
 ------------------------------------------------------- */
 
-const allowedOrigins = (
-  process.env.CLIENT_URL ||
-  "http://localhost:5173"
-)
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  }),
+);
 
 app.use(
   cors({
@@ -63,25 +67,12 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(
-        new Error("Not allowed by CORS.")
-      );
+      return callback(new Error("Not allowed by CORS."));
     },
     credentials: true,
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "X-Requested-With",
-    ],
-  })
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  }),
 );
 
 /* -------------------------------------------------------
@@ -91,14 +82,14 @@ app.use(
 app.use(
   express.json({
     limit: "2mb",
-  })
+  }),
 );
 
 app.use(
   express.urlencoded({
     extended: true,
     limit: "2mb",
-  })
+  }),
 );
 
 app.use(cookieParser());
@@ -109,15 +100,12 @@ app.use(cookieParser());
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: Number(
-    process.env.GLOBAL_RATE_LIMIT || 300
-  ),
+  max: Number(process.env.GLOBAL_RATE_LIMIT || 300),
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    message:
-      "Too many requests. Please try again later.",
+    message: "Too many requests. Please try again later.",
   },
 });
 
@@ -158,41 +146,20 @@ app.use(async (req, res, next) => {
 ------------------------------------------------------- */
 
 // Public routes
-app.use(
-  "/api/products",
-  productRoutes
-);
+app.use("/api/products", productRoutes);
 
-app.use(
-  "/api/orders",
-  orderRoutes
-);
+app.use("/api/orders", orderRoutes);
 
-app.use(
-  "/api/payments",
-  paymentRoutes
-);
+app.use("/api/payments", paymentRoutes);
 
-app.use(
-  "/api/requests",
-  requestRoutes
-);
+app.use("/api/requests", requestRoutes);
 
-app.use(
-  "/api/contact",
-  contactRoutes
-);
+app.use("/api/contact", contactRoutes);
 
-app.use(
-  "/api/tracking",
-  trackingRoutes
-);
+app.use("/api/tracking", trackingRoutes);
 
 // Admin authentication
-app.use(
-  "/api/admin/auth",
-  adminAuthRoutes
-);
+app.use("/api/admin/auth", adminAuthRoutes);
 
 app.get("/api/settings", async (req, res, next) => {
   try {
@@ -216,10 +183,7 @@ app.get("/api/settings", async (req, res, next) => {
   }
 });
 // Protected admin routes
-app.use(
-  "/api/admin",
-  adminRoutes
-);
+app.use("/api/admin", adminRoutes);
 
 /* -------------------------------------------------------
    404 HANDLER
@@ -238,23 +202,19 @@ app.use((req, res) => {
 ------------------------------------------------------- */
 
 app.use((error, req, res, next) => {
-  console.error(
-    "API Error:",
-    error
-  );
+  console.error("API Error:", error);
 
   if (error?.message === "Not allowed by CORS.") {
     return res.status(403).json({
       success: false,
-      message:
-        "Request origin is not allowed.",
+      message: "Request origin is not allowed.",
     });
   }
 
   if (error?.name === "ValidationError") {
-    const errors = Object.values(
-      error.errors || {}
-    ).map((item) => item.message);
+    const errors = Object.values(error.errors || {}).map(
+      (item) => item.message,
+    );
 
     return res.status(400).json({
       success: false,
@@ -271,49 +231,35 @@ app.use((error, req, res, next) => {
   }
 
   if (error?.code === 11000) {
-    const duplicateFields =
-      Object.keys(error.keyPattern || {});
+    const duplicateFields = Object.keys(error.keyPattern || {});
 
     return res.status(409).json({
       success: false,
       message:
         duplicateFields.length > 0
-          ? `Duplicate value for: ${duplicateFields.join(
-              ", "
-            )}.`
+          ? `Duplicate value for: ${duplicateFields.join(", ")}.`
           : "A record with this value already exists.",
     });
   }
 
-  if (
-    error?.name ===
-    "MulterError"
-  ) {
+  if (error?.name === "MulterError") {
     return res.status(400).json({
       success: false,
-      message:
-        error.message ||
-        "File upload failed.",
+      message: error.message || "File upload failed.",
     });
   }
 
-  const statusCode =
-    Number(error?.statusCode) ||
-    Number(error?.status) ||
-    500;
+  const statusCode = Number(error?.statusCode) || Number(error?.status) || 500;
 
-  return res.status(
-    statusCode >= 400 && statusCode < 600
-      ? statusCode
-      : 500
-  ).json({
-    success: false,
-    message:
-      statusCode >= 500
-        ? "Internal server error."
-        : error?.message ||
-          "Something went wrong.",
-  });
+  return res
+    .status(statusCode >= 400 && statusCode < 600 ? statusCode : 500)
+    .json({
+      success: false,
+      message:
+        statusCode >= 500
+          ? "Internal server error."
+          : error?.message || "Something went wrong.",
+    });
 });
 
 export default app;

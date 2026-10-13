@@ -4,110 +4,72 @@ import jwt from "jsonwebtoken";
 const getTokenFromRequest = (req) => {
   const cookieToken = req.cookies?.adminToken;
 
-  if (cookieToken) {
-    return cookieToken;
-  }
+  if (cookieToken) return cookieToken;
 
-  const authorization =
-    req.headers?.authorization;
+  const authorization = req.headers?.authorization;
 
-  if (
-    authorization &&
-    authorization.startsWith("Bearer ")
-  ) {
+  if (authorization?.startsWith("Bearer ")) {
     return authorization.substring(7).trim();
   }
 
   return null;
 };
 
-export const adminAuthMiddleware = (
-  req,
-  res,
-  next
-) => {
+export const adminAuthMiddleware = (req, res, next) => {
   try {
-    const token =
-      getTokenFromRequest(req);
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message:
-          "Admin authentication required.",
+        message: "Admin authentication required.",
       });
     }
 
-    const secret =
-      process.env.ADMIN_JWT_SECRET;
+    const secret = process.env.ADMIN_JWT_SECRET;
 
     if (!secret) {
-      console.error(
-        "ADMIN_JWT_SECRET is not configured."
-      );
-
       return res.status(500).json({
         success: false,
-        message:
-          "Admin authentication is not configured.",
+        message: "Admin authentication is not configured.",
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      secret
-    );
+    const decoded = jwt.verify(token, secret);
 
-    if (
-      !decoded ||
-      decoded.role !== "admin" ||
-      decoded.type !== "admin"
-    ) {
+    if (!decoded || decoded.role !== "admin" || decoded.type !== "admin") {
       return res.status(403).json({
         success: false,
-        message:
-          "Invalid admin authorization.",
+        message: "Invalid admin authorization.",
       });
     }
 
     req.admin = {
+      email: decoded.email || "",
       role: decoded.role,
       type: decoded.type,
     };
 
-    next();
+    return next();
   } catch (error) {
     if (
-      error?.name ===
-      "TokenExpiredError"
+      error?.name === "TokenExpiredError" ||
+      error?.name === "JsonWebTokenError"
     ) {
       return res.status(401).json({
         success: false,
         message:
-          "Admin session has expired. Please login again.",
+          error.name === "TokenExpiredError"
+            ? "Admin session has expired. Please login again."
+            : "Invalid admin authentication token.",
       });
     }
 
-    if (
-      error?.name ===
-      "JsonWebTokenError"
-    ) {
-      return res.status(401).json({
-        success: false,
-        message:
-          "Invalid admin authentication token.",
-      });
-    }
-
-    console.error(
-      "Admin authentication error:",
-      error
-    );
+    console.error("Admin authentication error:", error.message);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Unable to authenticate admin.",
+      message: "Unable to authenticate admin.",
     });
   }
 };
