@@ -242,10 +242,10 @@ export const googleAdminLogin = async (req, res, next) => {
 
     res.cookie("googleAdminState", state, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
+      secure: true,
+      sameSite: "none",
       maxAge: 5 * 60 * 1000,
-      path: "/api/admin/auth",
+      path: "/",
     });
 
     const params = new URLSearchParams({
