@@ -39,11 +39,9 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(
-    searchParams.get("category") || "all"
+    searchParams.get("category") || "all",
   );
-  const [sort, setSort] = useState(
-    searchParams.get("sort") || "featured"
-  );
+  const [sort, setSort] = useState(searchParams.get("sort") || "featured");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -90,7 +88,7 @@ const Products = () => {
     } catch (err) {
       setError(
         err?.response?.data?.message ||
-          "Unable to load products right now. Please try again."
+          "Unable to load products right now. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -128,12 +126,8 @@ const Products = () => {
       result = result.filter((product) => {
         const title = String(product?.title || "").toLowerCase();
         const name = String(product?.name || "").toLowerCase();
-        const description = String(
-          product?.description || ""
-        ).toLowerCase();
-        const productCategory = String(
-          product?.category || ""
-        ).toLowerCase();
+        const description = String(product?.description || "").toLowerCase();
+        const productCategory = String(product?.category || "").toLowerCase();
 
         const techStack = Array.isArray(product?.techStack)
           ? product.techStack.join(" ").toLowerCase()
@@ -153,14 +147,10 @@ const Products = () => {
       result = result.filter((product) => {
         const selectedCategory = category.toLowerCase();
 
-        const productCategory = String(
-          product?.category || ""
-        ).toLowerCase();
+        const productCategory = String(product?.category || "").toLowerCase();
 
         const productCategories = Array.isArray(product?.categories)
-          ? product.categories.map((item) =>
-              String(item).toLowerCase()
-            )
+          ? product.categories.map((item) => String(item).toLowerCase())
           : [];
 
         return (
@@ -179,22 +169,18 @@ const Products = () => {
     }
 
     if (sort === "name-az") {
-      result.sort((a, b) =>
-        getProductName(a).localeCompare(getProductName(b))
-      );
+      result.sort((a, b) => getProductName(a).localeCompare(getProductName(b)));
     }
 
     if (sort === "name-za") {
-      result.sort((a, b) =>
-        getProductName(b).localeCompare(getProductName(a))
-      );
+      result.sort((a, b) => getProductName(b).localeCompare(getProductName(a)));
     }
 
     if (sort === "newest") {
       result.sort(
         (a, b) =>
           new Date(b?.createdAt || 0).getTime() -
-          new Date(a?.createdAt || 0).getTime()
+          new Date(a?.createdAt || 0).getTime(),
       );
     }
 
@@ -208,9 +194,7 @@ const Products = () => {
   };
 
   const activeFilters =
-    Boolean(search) ||
-    category !== "all" ||
-    sort !== "featured";
+    Boolean(search) || category !== "all" || sort !== "featured";
 
   return (
     <Box
@@ -335,8 +319,8 @@ const Products = () => {
                   px: { xs: 1, sm: 0 },
                 }}
               >
-                Premium NFC products designed for smarter,
-                faster and more connected customer experiences.
+                Premium NFC products designed for smarter, faster and more
+                connected customer experiences.
               </Typography>
             </Stack>
           </MotionBox>
@@ -497,9 +481,7 @@ const Products = () => {
                     <TextField
                       fullWidth
                       value={search}
-                      onChange={(event) =>
-                        setSearch(event.target.value)
-                      }
+                      onChange={(event) => setSearch(event.target.value)}
                       placeholder="Search products..."
                       size="small"
                       InputProps={{
@@ -521,14 +503,10 @@ const Products = () => {
                       <Select
                         value={category}
                         label="Category"
-                        onChange={(event) =>
-                          setCategory(event.target.value)
-                        }
+                        onChange={(event) => setCategory(event.target.value)}
                         sx={selectSx}
                       >
-                        <MenuItem value="all">
-                          All Categories
-                        </MenuItem>
+                        <MenuItem value="all">All Categories</MenuItem>
 
                         {categories.map((item) => (
                           <MenuItem key={item} value={item}>
@@ -545,9 +523,7 @@ const Products = () => {
                       <Select
                         value={sort}
                         label="Sort By"
-                        onChange={(event) =>
-                          setSort(event.target.value)
-                        }
+                        onChange={(event) => setSort(event.target.value)}
                         startAdornment={
                           <InputAdornment position="start">
                             <SortOutlined
@@ -561,24 +537,16 @@ const Products = () => {
                         }
                         sx={selectSx}
                       >
-                        <MenuItem value="featured">
-                          Featured
-                        </MenuItem>
-                        <MenuItem value="newest">
-                          Newest
-                        </MenuItem>
+                        <MenuItem value="featured">Featured</MenuItem>
+                        <MenuItem value="newest">Newest</MenuItem>
                         <MenuItem value="price-low">
                           Price: Low to High
                         </MenuItem>
                         <MenuItem value="price-high">
                           Price: High to Low
                         </MenuItem>
-                        <MenuItem value="name-az">
-                          Name: A–Z
-                        </MenuItem>
-                        <MenuItem value="name-za">
-                          Name: Z–A
-                        </MenuItem>
+                        <MenuItem value="name-az">Name: A–Z</MenuItem>
+                        <MenuItem value="name-za">Name: Z–A</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -606,9 +574,7 @@ const Products = () => {
                     {category !== "all" && (
                       <Chip
                         size="small"
-                        label={`Category: ${formatCategory(
-                          category
-                        )}`}
+                        label={`Category: ${formatCategory(category)}`}
                         onDelete={() => setCategory("all")}
                         sx={chipSx}
                       />
@@ -689,9 +655,7 @@ const Products = () => {
                 {loading
                   ? "Loading products..."
                   : `${filteredProducts.length} ${
-                      filteredProducts.length === 1
-                        ? "product"
-                        : "products"
+                      filteredProducts.length === 1 ? "product" : "products"
                     } available`}
               </Typography>
             </Box>
@@ -728,11 +692,7 @@ const Products = () => {
               justifyContent: "center",
             }}
           >
-            <Stack
-              spacing={1}
-              alignItems="center"
-              sx={{ color: "#555" }}
-            >
+            <Stack spacing={1} alignItems="center" sx={{ color: "#555" }}>
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{
@@ -895,11 +855,9 @@ const Products = () => {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        background:
-                          "linear-gradient(145deg,#fff8dc,#fff1b0)",
+                        background: "linear-gradient(145deg,#fff8dc,#fff1b0)",
                         color: "#c28c00",
-                        boxShadow:
-                          "0 10px 28px rgba(194,140,0,.12)",
+                        boxShadow: "0 10px 28px rgba(194,140,0,.12)",
                       }}
                     >
                       <SearchOutlined
@@ -933,8 +891,8 @@ const Products = () => {
                       lineHeight: 1.55,
                     }}
                   >
-                    We couldn't find any products matching
-                    your current search or filters.
+                    We couldn't find any products matching your current search
+                    or filters.
                   </Typography>
 
                   <Button

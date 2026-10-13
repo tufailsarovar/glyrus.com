@@ -2,10 +2,7 @@
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
 
-const sanitizeString = (
-  value,
-  maxLength = 5000
-) => {
+const sanitizeString = (value, maxLength = 5000) => {
   if (typeof value !== "string") {
     return "";
   }
@@ -18,172 +15,103 @@ const sanitizeString = (
 
 const normalizeProduct = (product) => {
   const item =
-    typeof product.toObject ===
-    "function"
-      ? product.toObject()
-      : product;
+    typeof product.toObject === "function" ? product.toObject() : product;
 
   return {
     ...item,
-    id:
-      item.id ||
-      item._id?.toString(),
-    image:
-      item.image ||
-      item.images?.[0]?.url ||
-      "",
+    id: item.id || item._id?.toString(),
+    image: item.image || item.images?.[0]?.url || "",
   };
 };
 
-export const getAllProducts =
-  async (req, res, next) => {
-    try {
-      const {
-        category,
-        search,
-        featured,
-        limit = 50,
-        page = 1,
-      } = req.query;
+export const getAllProducts = async (req, res, next) => {
+  try {
+    const { category, search, featured, limit = 50, page = 1 } = req.query;
 
-      const filter = {
-        isActive: true,
-      };
+    const filter = {
+      isActive: true,
+    };
 
-      if (
-        category &&
-        typeof category ===
-          "string"
-      ) {
-        filter.category =
-          sanitizeString(
-            category,
-            100
-          );
+    if (category && typeof category === "string") {
+      filter.category = sanitizeString(category, 100);
+    }
+
+    if (featured === "true") {
+      filter.isFeatured = true;
+    }
+
+    if (search && typeof search === "string") {
+      const searchTerm = sanitizeString(search, 150);
+
+      if (searchTerm) {
+        filter.$text = {
+          $search: searchTerm,
+        };
       }
+    }
 
-      if (
-        featured === "true"
-      ) {
-        filter.isFeatured = true;
-      }
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
 
-      if (
-        search &&
-        typeof search ===
-          "string"
-      ) {
-        const searchTerm =
-          sanitizeString(
-            search,
-            150
-          );
+    const safePage = Math.max(Number(page) || 1, 1);
 
-        if (searchTerm) {
-          filter.$text = {
-            $search:
-              searchTerm,
-          };
-        }
-      }
+    const skip = (safePage - 1) * safeLimit;
 
-      const safeLimit = Math.min(
-        Math.max(
-          Number(limit) || 50,
-          1
-        ),
-        100
-      );
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .sort({
+          sortOrder: 1,
+          createdAt: -1,
+        })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
 
-      const safePage = Math.max(
-        Number(page) || 1,
-        1
-      );
+      Product.countDocuments(filter),
+    ]);
 
-      const skip =
-        (safePage - 1) *
-        safeLimit;
-
-      const [
-        products,
+    return res.status(200).json({
+      success: true,
+      products: products.map(normalizeProduct),
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
         total,
-      ] = await Promise.all([
-        Product.find(filter)
-          .sort({
-            sortOrder: 1,
-            createdAt: -1,
-          })
-          .skip(skip)
-          .limit(safeLimit)
-          .lean(),
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
-        Product.countDocuments(
-          filter
-        ),
-      ]);
+export const getProductById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
-      return res.status(200).json({
-        success: true,
-        products:
-          products.map(
-            normalizeProduct
-          ),
-        pagination: {
-          page: safePage,
-          limit: safeLimit,
-          total,
-          totalPages:
-            Math.ceil(
-              total /
-                safeLimit
-            ),
-        },
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID.",
       });
-    } catch (error) {
-      next(error);
     }
-  };
 
-export const getProductById =
-  async (req, res, next) => {
-    try {
-      const { id } =
-        req.params;
+    const product = await Product.findOne({
+      _id: id,
+      isActive: true,
+    }).lean();
 
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          id
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid product ID.",
-        });
-      }
-
-      const product =
-        await Product.findOne({
-          _id: id,
-          isActive: true,
-        }).lean();
-
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Product not found.",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        product:
-          normalizeProduct(
-            product
-          ),
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found.",
       });
-    } catch (error) {
-      next(error);
     }
-  };
+
+    return res.status(200).json({
+      success: true,
+      product: normalizeProduct(product),
+    });
+  } catch (error) {
+    next(error);
+  }
+};

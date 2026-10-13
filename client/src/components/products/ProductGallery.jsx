@@ -131,7 +131,7 @@ const ProductGallery = ({ product }) => {
         minWidth: 0,
       }}
     >
-      {/* =====================================================
+           {/* =====================================================
           MAIN GALLERY
       ===================================================== */}
 
@@ -152,22 +152,14 @@ const ProductGallery = ({ product }) => {
           },
           background:
             "linear-gradient(145deg,#FAFAFA 0%,#F2F2F2 100%)",
-          border:
-            "1px solid rgba(17,17,17,.065)",
-          boxShadow:
-            "0 10px 32px rgba(17,17,17,.055)",
-          cursor: zoom
-            ? "zoom-out"
-            : "zoom-in",
+          border: "1px solid rgba(17,17,17,.065)",
+          boxShadow: "0 10px 32px rgba(17,17,17,.055)",
+          cursor: galleryImages.length > 1 ? "grab" : "default",
           touchAction: "pan-y",
           isolation: "isolate",
         }}
-        onClick={() =>
-          setZoom((value) => !value)
-        }
       >
         {/* IMAGE */}
-
         <AnimatePresence
           initial={false}
           custom={direction}
@@ -194,11 +186,7 @@ const ProductGallery = ({ product }) => {
                 duration: 0.24,
               },
             }}
-            drag={
-              galleryImages.length > 1
-                ? "x"
-                : false
-            }
+            drag={galleryImages.length > 1 ? "x" : false}
             dragConstraints={{
               left: 0,
               right: 0,
@@ -220,10 +208,6 @@ const ProductGallery = ({ product }) => {
                   "/placeholder-product.png";
               }
             }}
-            onClick={(event) => {
-              event.stopPropagation();
-              setZoom((value) => !value);
-            }}
             style={{
               position: "absolute",
               inset: 0,
@@ -235,79 +219,15 @@ const ProductGallery = ({ product }) => {
                 window.innerWidth < 600
                   ? "10px"
                   : "26px",
-              transform: zoom
-                ? "scale(1.55)"
-                : "scale(1)",
-              cursor: zoom
-                ? "zoom-out"
-                : "grab",
+              transform: "none",
+              cursor: galleryImages.length > 1 ? "grab" : "default",
               userSelect: "none",
               WebkitUserDrag: "none",
             }}
           />
         </AnimatePresence>
 
-        {/* ===================================================
-            ZOOM
-        =================================================== */}
-
-        <MotionBox
-          initial={{
-            opacity: 0,
-            scale: 0.8,
-          }}
-          animate={{
-            opacity: 1,
-            scale: 1,
-          }}
-          transition={{
-            duration: 0.25,
-          }}
-          sx={{
-            position: "absolute",
-            top: {
-              xs: 9,
-              sm: 13,
-            },
-            right: {
-              xs: 9,
-              sm: 13,
-            },
-            width: {
-              xs: 32,
-              sm: 38,
-            },
-            height: {
-              xs: 32,
-              sm: 38,
-            },
-            display: "grid",
-            placeItems: "center",
-            borderRadius: "50%",
-            bgcolor:
-              "rgba(255,255,255,.92)",
-            backdropFilter: "blur(10px)",
-            color: "#222",
-            boxShadow:
-              "0 5px 18px rgba(0,0,0,.08)",
-            pointerEvents: "none",
-            zIndex: 6,
-          }}
-        >
-          <ZoomInRounded
-            sx={{
-              fontSize: {
-                xs: 17,
-                sm: 20,
-              },
-            }}
-          />
-        </MotionBox>
-
-        {/* ===================================================
-            PREVIOUS
-        =================================================== */}
-
+        {/* PREVIOUS */}
         {galleryImages.length > 1 && (
           <MotionBox
             whileHover={{
@@ -324,8 +244,7 @@ const ProductGallery = ({ product }) => {
                 sm: 11,
               },
               top: "50%",
-              transform:
-                "translateY(-50%)",
+              transform: "translateY(-50%)",
               zIndex: 8,
             }}
           >
@@ -345,21 +264,15 @@ const ProductGallery = ({ product }) => {
                   sm: 39,
                 },
                 color: "#111",
-                bgcolor:
-                  "rgba(255,255,255,.94)",
-                border:
-                  "1px solid rgba(17,17,17,.07)",
-                boxShadow:
-                  "0 5px 18px rgba(0,0,0,.09)",
-                backdropFilter:
-                  "blur(10px)",
+                bgcolor: "rgba(255,255,255,.94)",
+                border: "1px solid rgba(17,17,17,.07)",
+                boxShadow: "0 5px 18px rgba(0,0,0,.09)",
+                backdropFilter: "blur(10px)",
                 transition:
                   "background-color .18s ease,box-shadow .18s ease",
                 "&:hover": {
-                  bgcolor:
-                    "#FFD000",
-                  boxShadow:
-                    "0 8px 22px rgba(0,0,0,.12)",
+                  bgcolor: "#FFD000",
+                  boxShadow: "0 8px 22px rgba(0,0,0,.12)",
                 },
               }}
             >
@@ -375,10 +288,7 @@ const ProductGallery = ({ product }) => {
           </MotionBox>
         )}
 
-        {/* ===================================================
-            NEXT
-        =================================================== */}
-
+        {/* NEXT */}
         {galleryImages.length > 1 && (
           <MotionBox
             whileHover={{
@@ -395,8 +305,7 @@ const ProductGallery = ({ product }) => {
                 sm: 11,
               },
               top: "50%",
-              transform:
-                "translateY(-50%)",
+              transform: "translateY(-50%)",
               zIndex: 8,
             }}
           >
@@ -416,21 +325,15 @@ const ProductGallery = ({ product }) => {
                   sm: 39,
                 },
                 color: "#111",
-                bgcolor:
-                  "rgba(255,255,255,.94)",
-                border:
-                  "1px solid rgba(17,17,17,.07)",
-                boxShadow:
-                  "0 5px 18px rgba(0,0,0,.09)",
-                backdropFilter:
-                  "blur(10px)",
+                bgcolor: "rgba(255,255,255,.94)",
+                border: "1px solid rgba(17,17,17,.07)",
+                boxShadow: "0 5px 18px rgba(0,0,0,.09)",
+                backdropFilter: "blur(10px)",
                 transition:
                   "background-color .18s ease,box-shadow .18s ease",
                 "&:hover": {
-                  bgcolor:
-                    "#FFD000",
-                  boxShadow:
-                    "0 8px 22px rgba(0,0,0,.12)",
+                  bgcolor: "#FFD000",
+                  boxShadow: "0 8px 22px rgba(0,0,0,.12)",
                 },
               }}
             >
@@ -446,10 +349,7 @@ const ProductGallery = ({ product }) => {
           </MotionBox>
         )}
 
-        {/* ===================================================
-            COUNTER
-        =================================================== */}
-
+        {/* COUNTER */}
         {galleryImages.length > 1 && (
           <Box
             sx={{
@@ -459,8 +359,7 @@ const ProductGallery = ({ product }) => {
                 xs: 9,
                 sm: 12,
               },
-              transform:
-                "translateX(-50%)",
+              transform: "translateX(-50%)",
               px: {
                 xs: 1,
                 sm: 1.25,
@@ -470,11 +369,9 @@ const ProductGallery = ({ product }) => {
                 sm: 0.45,
               },
               borderRadius: "999px",
-              bgcolor:
-                "rgba(17,17,17,.68)",
+              bgcolor: "rgba(17,17,17,.68)",
               color: "#fff",
-              backdropFilter:
-                "blur(10px)",
+              backdropFilter: "blur(10px)",
               fontSize: {
                 xs: 8.5,
                 sm: 10,
@@ -485,15 +382,11 @@ const ProductGallery = ({ product }) => {
               zIndex: 7,
             }}
           >
-            {activeIndex + 1} /{" "}
-            {galleryImages.length}
+            {activeIndex + 1} / {galleryImages.length}
           </Box>
         )}
 
-        {/* ===================================================
-            DISCOUNT STYLE ACCENT
-        =================================================== */}
-
+        {/* DISCOUNT STYLE ACCENT */}
         <Box
           sx={{
             position: "absolute",

@@ -734,7 +734,7 @@ const FeaturedProducts = () => {
 
                           overflow: "hidden",
 
-                          background: "linear-gradient(135deg,#FAFAFA,#F1F1F1)",
+                          background: "#F7F7F7",
 
                           textDecoration: "none",
                         }}
@@ -750,27 +750,20 @@ const FeaturedProducts = () => {
                                 "/placeholder-product.png";
                             }}
                             sx={{
-                              width: "100%",
-
-                              height: "100%",
-
-                              objectFit: "cover",
-
-                              display: "block",
-
-                              transition:
-                                "transform .75s cubic-bezier(.2,.7,.2,1)",
-
-                              transform: "scale(1)",
-
-                              "&:hover": {
-                                transform: {
-                                  xs: "scale(1)",
-
-                                  md: "scale(1.08)",
-                                },
-                              },
-                            }}
+  width: "100%",
+  height: "100%",
+  objectFit: "contain",
+  objectPosition: "center",
+  display: "block",
+  transition: "transform .75s cubic-bezier(.2,.7,.2,1)",
+  transform: "scale(1)",
+  "&:hover": {
+    transform: {
+      xs: "scale(1)",
+      md: "scale(1.04)",
+    },
+  },
+}}
                           />
                         ) : (
                           <Box
@@ -813,80 +806,52 @@ const FeaturedProducts = () => {
                           }}
                         />
 
-                        {/* CATEGORY */}
-
-                        <Chip
-                          icon={
-                            <LocalOfferRounded
-                              sx={{
-                                fontSize: "11px !important",
-                              }}
-                            />
-                          }
-                          label={category}
-                          size="small"
+                        {/* CATEGORY RIBBON */}
+                        <Box
                           sx={{
                             position: "absolute",
+                            top: { xs: 9, sm: 11 },
+                            left: 0,
+                            zIndex: 4,
+                            maxWidth: "58%",
+                            bgcolor: "#111",
+                            color: "#FFD000",
+                            fontSize: { xs: 8.5, sm: 10 },
+                            fontWeight: 950,
+                            letterSpacing: ".02em",
+                            lineHeight: 1.2,
+                            textTransform: "uppercase",
+                            textAlign: "center",
+                            boxShadow: "0 6px 18px rgba(0,0,0,.24)",
+                            px: { xs: 1.4, sm: 1.8 },
+                            py: { xs: 0.6, sm: 0.7 },
+                            pr: { xs: 2.2, sm: 2.6 },
+                            whiteSpace: "nowrap",
+                            overflow: "visible",
 
-                            top: {
-                              xs: 8,
-
-                              sm: 10,
-                            },
-
-                            left: {
-                              xs: 8,
-
-                              sm: 10,
-                            },
-
-                            maxWidth: "52%",
-
-                            height: {
-                              xs: 23,
-
-                              sm: 26,
-                            },
-
-                            borderRadius: "999px",
-
-                            bgcolor: "rgba(255,255,255,.94)",
-
-                            backdropFilter: "blur(12px)",
-
-                            color: "#222",
-
-                            fontSize: {
-                              xs: 8,
-
-                              sm: 9.5,
-                            },
-
-                            fontWeight: 850,
-
-                            boxShadow: "0 4px 15px rgba(0,0,0,.10)",
-
-                            "& .MuiChip-icon": {
-                              color: "#D39B00",
-
-                              ml: 0.5,
-                            },
-
-                            "& .MuiChip-label": {
-                              px: {
-                                xs: 0.65,
-
-                                sm: 0.85,
+                            "&::after": {
+                              content: '""',
+                              position: "absolute",
+                              top: 0,
+                              left: "100%",
+                              width: 0,
+                              height: 0,
+                              borderTop: {
+                                xs: "13px solid transparent",
+                                sm: "15px solid transparent",
                               },
-
-                              overflow: "hidden",
-
-                              textOverflow: "ellipsis",
-
-                              whiteSpace: "nowrap",
+                              borderBottom: {
+                                xs: "13px solid transparent",
+                                sm: "15px solid transparent",
+                              },
+                              borderLeft: "12px solid #111",
+                              filter:
+                                "drop-shadow(3px 3px 2px rgba(0,0,0,.12))",
                             },
                           }}
-                        />
+                        >
+                          {category}
+                        </Box>
 
                         {/* =================================
 
