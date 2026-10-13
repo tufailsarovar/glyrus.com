@@ -1,4 +1,3 @@
-// Glyrus — ProductForm.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -30,8 +29,12 @@ import {
   ImageRounded,
   SaveRounded,
   VideoLibraryRounded,
+  StoreRounded,
+  Inventory2Rounded,
+  TuneRounded,
+  PaymentsRounded,
 } from "@mui/icons-material";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { validateProduct } from "../../utils/validation";
@@ -63,7 +66,7 @@ const categories = [
   "Google Review QR",
   "NFC Tags",
   "NFC Keychains",
-  "NFC Stands"
+  "NFC Stands",
 ];
 
 const customizationTypes = [
@@ -82,9 +85,7 @@ const getProductData = (data) =>
 
 const getImageUrl = (image) => {
   if (!image) return "";
-
   if (typeof image === "string") return image;
-
   return image?.url || image?.secure_url || image?.src || image?.path || "";
 };
 
@@ -112,11 +113,107 @@ const getImages = (product) => {
   }
 
   const fallback = product?.image || product?.imageUrl || product?.thumbnail;
-
   const url = getImageUrl(fallback);
 
   return url ? [{ url, publicId: "" }] : [];
 };
+
+const inputSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "7px",
+    bgcolor: "#FFFFFF",
+    fontSize: { xs: "0.8rem", sm: "0.86rem" },
+    "& fieldset": { borderColor: "#E4E4E4" },
+    "&:hover fieldset": { borderColor: "#D4B43A" },
+    "&.Mui-focused fieldset": {
+      borderColor: "#C4A12C",
+      borderWidth: 1,
+    },
+  },
+  "& .MuiInputLabel-root": {
+    fontSize: { xs: "0.8rem", sm: "0.86rem" },
+  },
+  "& .MuiFormHelperText-root": {
+    fontSize: "0.67rem",
+    lineHeight: 1.5,
+    mx: 0,
+  },
+};
+
+const cardSx = {
+  width: "100%",
+  minWidth: 0,
+  overflow: "hidden",
+  border: "1px solid #E8E8E8",
+  borderRadius: "9px",
+  bgcolor: "#FFFFFF",
+  boxShadow: "0 3px 16px rgba(0,0,0,0.025)",
+  transition: "border-color 180ms ease, box-shadow 180ms ease",
+  "&:hover": {
+    borderColor: "#E2D18A",
+    boxShadow: "0 6px 22px rgba(0,0,0,0.04)",
+  },
+};
+
+const contentSx = {
+  p: { xs: 1.5, sm: 2, md: 2.2 },
+  "&:last-child": {
+    pb: { xs: 1.5, sm: 2, md: 2.2 },
+  },
+};
+
+const headingSx = {
+  fontSize: { xs: "0.92rem", sm: "1rem" },
+  fontWeight: 900,
+  letterSpacing: "-0.025em",
+  color: "#171717",
+  lineHeight: 1.35,
+};
+
+const helperSx = {
+  mt: 0.35,
+  mb: 1.8,
+  color: "#858585",
+  fontSize: "0.7rem",
+  lineHeight: 1.5,
+};
+
+const MotionItem = ({ children, index = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.28, delay: index * 0.045, ease: "easeOut" }}
+    style={{ minWidth: 0, width: "100%" }}
+  >
+    {children}
+  </motion.div>
+);
+
+const SectionHeader = ({ icon, title, description }) => (
+  <Stack direction="row" alignItems="center" spacing={1.1} sx={{ mb: 1.8 }}>
+    <Box
+      sx={{
+        width: 36,
+        height: 36,
+        flexShrink: 0,
+        display: "grid",
+        placeItems: "center",
+        borderRadius: "7px",
+        bgcolor: "#FFF5CF",
+        color: "#967100",
+        "& svg": { fontSize: 20 },
+      }}
+    >
+      {icon}
+    </Box>
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={headingSx}>{title}</Typography>
+      <Typography sx={{ mt: 0.25, fontSize: "0.69rem", color: "#888888" }}>
+        {description}
+      </Typography>
+    </Box>
+  </Stack>
+);
 
 const ProductForm = () => {
   const navigate = useNavigate();
@@ -135,7 +232,6 @@ const ProductForm = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
   const [fieldErrors, setFieldErrors] = useState({});
 
   const allImages = useMemo(
@@ -145,9 +241,7 @@ const ProductForm = () => {
 
   useEffect(() => {
     return () => {
-      previewUrls.forEach((url) => {
-        URL.revokeObjectURL(url);
-      });
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [previewUrls]);
 
@@ -163,7 +257,6 @@ const ProductForm = () => {
         setError("");
 
         const response = await api.get(`/api/products/${id}`);
-
         const product = getProductData(response?.data);
 
         if (!product) {
@@ -171,7 +264,6 @@ const ProductForm = () => {
         }
 
         const productImages = getImages(product);
-
         setExistingImages(productImages);
 
         setForm({
@@ -246,7 +338,6 @@ const ProductForm = () => {
   const handleCustomizationChange = (option) => {
     setForm((previous) => {
       const current = previous.customizationOptions || [];
-
       const exists = current.includes(option);
 
       return {
@@ -279,7 +370,6 @@ const ProductForm = () => {
     const urls = validFiles.map((file) => URL.createObjectURL(file));
 
     setSelectedFiles((previous) => [...previous, ...validFiles]);
-
     setPreviewUrls((previous) => [...previous, ...urls]);
 
     event.target.value = "";
@@ -321,13 +411,9 @@ const ProductForm = () => {
     const payload = new FormData();
 
     payload.append("name", form.name.trim());
-
     payload.append("title", (form.title || form.name).trim());
-
     payload.append("category", form.category);
-
     payload.append("description", form.description.trim());
-
     payload.append("price", String(Number(form.price)));
 
     if (
@@ -349,7 +435,6 @@ const ProductForm = () => {
     }
 
     payload.append("isActive", String(form.isActive));
-
     payload.append("isFeatured", String(form.isFeatured));
 
     payload.append(
@@ -408,7 +493,6 @@ const ProductForm = () => {
       setSuccess("");
 
       const payload = buildPayload();
-
       let response;
 
       if (isEdit) {
@@ -454,12 +538,17 @@ const ProductForm = () => {
     return (
       <Box
         sx={{
-          minHeight: "60vh",
+          minHeight: "45vh",
           display: "grid",
           placeItems: "center",
         }}
       >
-        <CircularProgress size={34} thickness={4} sx={{ color: "#F4C430" }} />
+        <Stack alignItems="center" spacing={1.2}>
+          <CircularProgress size={30} thickness={4} sx={{ color: "#F4C430" }} />
+          <Typography sx={{ fontSize: "0.75rem", color: "#888888" }}>
+            Loading product...
+          </Typography>
+        </Stack>
       </Box>
     );
   }
@@ -470,40 +559,46 @@ const ProductForm = () => {
       onSubmit={handleSubmit}
       sx={{
         width: "100%",
-        pb: { xs: 3, md: 5 },
+        minWidth: 0,
+        pb: { xs: 1.5, sm: 2.5 },
       }}
     >
       <Stack
         direction={{ xs: "column", sm: "row" }}
-        alignItems={{ xs: "flex-start", sm: "center" }}
+        alignItems={{ xs: "stretch", sm: "center" }}
         justifyContent="space-between"
-        spacing={2}
-        sx={{ mb: { xs: 2.5, md: 3.5 } }}
+        spacing={1.5}
+        sx={{ mb: { xs: 1.8, sm: 2.2 } }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.2}>
+        <Stack direction="row" alignItems="center" spacing={1}>
           <IconButton
+            type="button"
             onClick={() => navigate("/admin/products")}
             disabled={saving}
             sx={{
-              border: "1px solid #E4E4E4",
-              borderRadius: 2.5,
-              bgcolor: "#fff",
+              width: 36,
+              height: 36,
+              border: "1px solid #E5E5E5",
+              borderRadius: "7px",
+              bgcolor: "#FFFFFF",
+              color: "#222222",
+              "&:hover": {
+                bgcolor: "#FFF9E6",
+                borderColor: "#E5C54E",
+              },
             }}
           >
-            <ArrowBackRounded />
+            <ArrowBackRounded sx={{ fontSize: 19 }} />
           </IconButton>
 
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               sx={{
-                fontSize: {
-                  xs: "1.45rem",
-                  sm: "1.85rem",
-                  md: "2.2rem",
-                },
-                fontWeight: 900,
-                letterSpacing: "-0.04em",
-                color: "#111",
+                fontSize: { xs: "1.4rem", sm: "1.75rem", md: "1.95rem" },
+                fontWeight: 950,
+                letterSpacing: "-0.05em",
+                color: "#151515",
+                lineHeight: 1.15,
               }}
             >
               {isEdit ? "Edit Product" : "Add Product"}
@@ -511,12 +606,9 @@ const ProductForm = () => {
 
             <Typography
               sx={{
-                mt: 0.5,
-                color: "#777",
-                fontSize: {
-                  xs: "0.78rem",
-                  sm: "0.88rem",
-                },
+                mt: 0.35,
+                fontSize: { xs: "0.7rem", sm: "0.78rem" },
+                color: "#858585",
               }}
             >
               {isEdit
@@ -531,927 +623,855 @@ const ProductForm = () => {
           variant="contained"
           startIcon={
             saving ? (
-              <CircularProgress size={18} sx={{ color: "#555" }} />
+              <CircularProgress size={16} sx={{ color: "#222222" }} />
             ) : (
               <SaveRounded />
             )
           }
           disabled={saving}
           sx={{
-            minHeight: 45,
-            borderRadius: 2.5,
+            alignSelf: { xs: "stretch", sm: "center" },
+            minHeight: 39,
+            px: 2,
+            borderRadius: "7px",
             bgcolor: "#F4C430",
-            color: "#111",
+            color: "#151515",
+            fontSize: "0.75rem",
             fontWeight: 900,
-            px: 2.5,
-            "&:hover": {
-              bgcolor: "#E5B500",
-            },
-            "&:disabled": {
-              bgcolor: "#E8E8E8",
-              color: "#999",
-            },
+            boxShadow: "none",
+            "&:hover": { bgcolor: "#E5B500", boxShadow: "none" },
+            "&:disabled": { bgcolor: "#EEEEEE", color: "#888888" },
           }}
         >
           {saving ? "Saving..." : isEdit ? "Update Product" : "Save Product"}
         </Button>
       </Stack>
 
-      {error && (
-        <Alert
-          severity="error"
-          onClose={() => setError("")}
-          sx={{ mb: 2.5, borderRadius: 3 }}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert
-          severity="success"
-          onClose={() => setSuccess("")}
-          sx={{ mb: 2.5, borderRadius: 3 }}
-        >
-          {success}
-        </Alert>
-      )}
-
-      <Grid container spacing={{ xs: 2, md: 2.5 }}>
-        <Grid item xs={12} md={7.5}>
-          <Stack spacing={2.5}>
-            <MotionCard
-              elevation={0}
-              initial={{
-                opacity: 0,
-                y: 12,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{ duration: 0.35 }}
+      <AnimatePresence mode="wait">
+        {error && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+          >
+            <Alert
+              severity="error"
+              onClose={() => setError("")}
               sx={{
-                borderRadius: { xs: 3, md: 4 },
+                mb: 1.5,
+                borderRadius: "7px",
+                py: 0.2,
+                fontSize: "0.76rem",
               }}
             >
-              <CardContent
-                sx={{
-                  p: { xs: 2, sm: 3 },
-                  "&:last-child": {
-                    pb: { xs: 2, sm: 3 },
-                  },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontWeight: 900,
-                    fontSize: "1.1rem",
-                    color: "#111",
-                  }}
-                >
-                  Basic Information
-                </Typography>
+              {error}
+            </Alert>
+          </motion.div>
+        )}
 
-                <Typography
-                  sx={{
-                    mt: 0.4,
-                    mb: 2.5,
-                    color: "#888",
-                    fontSize: "0.78rem",
-                  }}
-                >
-                  Add the core information customers will see.
-                </Typography>
+        {success && (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+          >
+            <Alert
+              severity="success"
+              onClose={() => setSuccess("")}
+              sx={{
+                mb: 1.5,
+                borderRadius: "7px",
+                py: 0.2,
+                fontSize: "0.76rem",
+              }}
+            >
+              {success}
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="Product Name"
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      error={Boolean(fieldErrors.name)}
-                      helperText={fieldErrors.name}
-                      disabled={saving}
-                    />
-                  </Grid>
+      <Grid container spacing={{ xs: 1.2, sm: 1.5, md: 1.7 }}>
+        <Grid item xs={12} md={7.5} sx={{ minWidth: 0 }}>
+          <Stack spacing={{ xs: 1.2, sm: 1.5 }}>
+            <MotionItem index={0}>
+              <Card elevation={0} sx={cardSx}>
+                <CardContent sx={contentSx}>
+                  <SectionHeader
+                    icon={<StoreRounded />}
+                    title="Basic Information"
+                    description="Add the core details customers will see."
+                  />
 
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Display Title"
-                      name="title"
-                      value={form.title}
-                      onChange={handleChange}
-                      disabled={saving}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth disabled={saving}>
-                      <InputLabel>Category</InputLabel>
-
-                      <Select
-                        label="Category"
-                        name="category"
-                        value={form.category}
+                  <Grid container spacing={{ xs: 1.2, sm: 1.5 }}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Product Name"
+                        name="name"
+                        value={form.name}
                         onChange={handleChange}
-                      >
-                        {categories.map((category) => (
-                          <MenuItem key={category} value={category}>
-                            {category}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                        error={Boolean(fieldErrors.name)}
+                        helperText={fieldErrors.name}
+                        disabled={saving}
+                        sx={inputSx}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Display Title"
+                        name="title"
+                        value={form.title}
+                        onChange={handleChange}
+                        disabled={saving}
+                        sx={inputSx}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth disabled={saving} sx={inputSx}>
+                        <InputLabel>Category</InputLabel>
+                        <Select
+                          label="Category"
+                          name="category"
+                          value={form.category}
+                          onChange={handleChange}
+                        >
+                          {categories.map((category) => (
+                            <MenuItem key={category} value={category}>
+                              {category}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="SKU"
+                        name="sku"
+                        value={form.sku}
+                        onChange={handleChange}
+                        disabled={saving}
+                        sx={inputSx}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        required
+                        multiline
+                        minRows={4}
+                        label="Product Description"
+                        name="description"
+                        value={form.description}
+                        onChange={handleChange}
+                        error={Boolean(fieldErrors.description)}
+                        helperText={fieldErrors.description}
+                        disabled={saving}
+                        sx={inputSx}
+                      />
+                    </Grid>
                   </Grid>
+                </CardContent>
+              </Card>
+            </MotionItem>
 
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="SKU"
-                      name="sku"
-                      value={form.sku}
-                      onChange={handleChange}
-                      disabled={saving}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      required
-                      multiline
-                      minRows={5}
-                      label="Product Description"
-                      name="description"
-                      value={form.description}
-                      onChange={handleChange}
-                      error={Boolean(fieldErrors.description)}
-                      helperText={fieldErrors.description}
-                      disabled={saving}
-                    />
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </MotionCard>
-
-            <MotionCard
-              elevation={0}
-              initial={{
-                opacity: 0,
-                y: 12,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.35,
-                delay: 0.05,
-              }}
-              sx={{
-                borderRadius: { xs: 3, md: 4 },
-              }}
-            >
-              <CardContent
-                sx={{
-                  p: { xs: 2, sm: 3 },
-                  "&:last-child": {
-                    pb: { xs: 2, sm: 3 },
-                  },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontWeight: 900,
-                    fontSize: "1.1rem",
-                    color: "#111",
-                  }}
-                >
-                  Pricing & Inventory
-                </Typography>
-
-                <Typography
-                  sx={{
-                    mt: 0.4,
-                    mb: 2.5,
-                    color: "#888",
-                    fontSize: "0.78rem",
-                  }}
-                >
-                  Configure the product price and available stock.
-                </Typography>
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="Price"
-                      name="price"
-                      type="number"
-                      value={form.price}
-                      onChange={handleChange}
-                      error={Boolean(fieldErrors.price)}
-                      helperText={fieldErrors.price || "Original price in INR"}
-                      inputProps={{
-                        min: 0,
-                        step: "0.01",
-                      }}
-                      disabled={saving}
-                      InputProps={{
-                        startAdornment: (
-                          <Typography
-                            sx={{
-                              mr: 1,
-                              color: "#777",
-                              fontWeight: 700,
-                            }}
-                          >
-                            ₹
-                          </Typography>
-                        ),
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Discount Price"
-                      name="discountPrice"
-                      type="number"
-                      value={form.discountPrice}
-                      onChange={handleChange}
-                      error={Boolean(fieldErrors.discountPrice)}
-                      helperText={
-                        fieldErrors.discountPrice || "Optional sale price"
-                      }
-                      inputProps={{
-                        min: 0,
-                        step: "0.01",
-                      }}
-                      disabled={saving}
-                      InputProps={{
-                        startAdornment: (
-                          <Typography
-                            sx={{
-                              mr: 1,
-                              color: "#777",
-                              fontWeight: 700,
-                            }}
-                          >
-                            ₹
-                          </Typography>
-                        ),
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Stock"
-                      name="stock"
-                      type="number"
-                      value={form.stock}
-                      onChange={handleChange}
-                      inputProps={{
-                        min: 0,
-                        step: 1,
-                      }}
-                      disabled={saving}
-                    />
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </MotionCard>
-
-            <MotionCard
-              elevation={0}
-              initial={{
-                opacity: 0,
-                y: 12,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.35,
-                delay: 0.1,
-              }}
-              sx={{
-                borderRadius: { xs: 3, md: 4 },
-              }}
-            >
-              <CardContent
-                sx={{
-                  p: { xs: 2, sm: 3 },
-                  "&:last-child": {
-                    pb: { xs: 2, sm: 3 },
-                  },
-                }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={1}
-                  sx={{ mb: 0.5 }}
-                >
-                  <ImageRounded
-                    sx={{
-                      color: "#A17B00",
-                    }}
+            <MotionItem index={1}>
+              <Card elevation={0} sx={cardSx}>
+                <CardContent sx={contentSx}>
+                  <SectionHeader
+                    icon={<PaymentsRounded />}
+                    title="Pricing & Inventory"
+                    description="Configure pricing and available stock."
                   />
 
-                  <Typography
-                    sx={{
-                      fontWeight: 900,
-                      fontSize: "1.1rem",
-                      color: "#111",
-                    }}
-                  >
-                    Product Images
-                  </Typography>
-                </Stack>
+                  <Grid container spacing={{ xs: 1.2, sm: 1.5 }}>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Price"
+                        name="price"
+                        type="number"
+                        value={form.price}
+                        onChange={handleChange}
+                        error={Boolean(fieldErrors.price)}
+                        helperText={
+                          fieldErrors.price || "Original price in INR"
+                        }
+                        inputProps={{ min: 0, step: "0.01" }}
+                        disabled={saving}
+                        sx={inputSx}
+                        InputProps={{
+                          startAdornment: (
+                            <Typography
+                              sx={{ mr: 0.8, color: "#777", fontWeight: 700 }}
+                            >
+                              ₹
+                            </Typography>
+                          ),
+                        }}
+                      />
+                    </Grid>
 
-                <Typography
-                  sx={{
-                    color: "#888",
-                    fontSize: "0.78rem",
-                    mb: 2.5,
-                  }}
-                >
-                  Upload clear product images. Maximum 5MB per image.
-                </Typography>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="Discount Price"
+                        name="discountPrice"
+                        type="number"
+                        value={form.discountPrice}
+                        onChange={handleChange}
+                        error={Boolean(fieldErrors.discountPrice)}
+                        helperText={
+                          fieldErrors.discountPrice || "Optional sale price"
+                        }
+                        inputProps={{ min: 0, step: "0.01" }}
+                        disabled={saving}
+                        sx={inputSx}
+                        InputProps={{
+                          startAdornment: (
+                            <Typography
+                              sx={{ mr: 0.8, color: "#777", fontWeight: 700 }}
+                            >
+                              ₹
+                            </Typography>
+                          ),
+                        }}
+                      />
+                    </Grid>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  hidden
-                  onChange={handleFileChange}
-                />
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="Stock"
+                        name="stock"
+                        type="number"
+                        value={form.stock}
+                        onChange={handleChange}
+                        inputProps={{ min: 0, step: 1 }}
+                        disabled={saving}
+                        sx={inputSx}
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </MotionItem>
 
-                <Button
-                  variant="outlined"
-                  startIcon={<AddPhotoAlternateRounded />}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={saving}
-                  sx={{
-                    minHeight: 44,
-                    borderRadius: 2.5,
-                    borderColor: "#DCDCDC",
-                    color: "#444",
-                    "&:hover": {
-                      borderColor: "#F4C430",
-                      bgcolor: "#FFFBEA",
-                    },
-                  }}
-                >
-                  Add Images
-                </Button>
+            <MotionItem index={2}>
+              <Card elevation={0} sx={cardSx}>
+                <CardContent sx={contentSx}>
+                  <SectionHeader
+                    icon={<ImageRounded />}
+                    title="Product Images"
+                    description="Upload clear images, up to 5MB per image."
+                  />
 
-                {allImages.length > 0 && (
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    onChange={handleFileChange}
+                  />
+
                   <Box
+                    component={motion.div}
+                    whileHover={{ borderColor: "#D8B536", bgcolor: "#FFFCF1" }}
                     sx={{
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "repeat(2, minmax(0, 1fr))",
-                        sm: "repeat(3, minmax(0, 1fr))",
-                        md: "repeat(4, minmax(0, 1fr))",
-                      },
-                      gap: 1.5,
-                      mt: 2.5,
+                      p: { xs: 1.4, sm: 1.8 },
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.2,
+                      border: "1px dashed #D9D9D9",
+                      borderRadius: "7px",
+                      bgcolor: "#FCFCFC",
+                      transition: "background-color 180ms ease",
                     }}
                   >
-                    {existingImages.map((image, index) => (
-                      <Box
-                        key={`existing-${image}-${index}`}
-                        sx={{
-                          position: "relative",
-                          aspectRatio: "1 / 1",
-                          borderRadius: 3,
-                          overflow: "hidden",
-                          border: "1px solid #E5E5E5",
-                          bgcolor: "#F7F7F7",
-                        }}
+                    <Box
+                      sx={{
+                        width: 38,
+                        height: 38,
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        borderRadius: "7px",
+                        bgcolor: "#FFF5CF",
+                        color: "#947000",
+                      }}
+                    >
+                      <CloudUploadRounded />
+                    </Box>
+
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontSize: "0.77rem", fontWeight: 850 }}>
+                        Upload product photos
+                      </Typography>
+                      <Typography
+                        sx={{ mt: 0.25, color: "#888", fontSize: "0.67rem" }}
                       >
-                        <Box
-                          component="img"
-                          src={image.url}
-                          alt={`Product ${index + 1}`}
-                          sx={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
+                        Select one or multiple image files.
+                      </Typography>
+                    </Box>
 
-                        <IconButton
-                          type="button"
-                          size="small"
-                          onClick={() => removeExistingImage(index)}
-                          disabled={saving}
-                          sx={{
-                            position: "absolute",
-                            top: 7,
-                            right: 7,
-                            width: 30,
-                            height: 30,
-                            bgcolor: "rgba(255,255,255,0.92)",
-                            color: "#B3261E",
-                            "&:hover": {
-                              bgcolor: "#FFFFFF",
-                            },
-                          }}
-                        >
-                          <DeleteOutlineRounded sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Box>
-                    ))}
-
-                    {previewUrls.map((url, index) => (
-                      <Box
-                        key={`preview-${url}`}
-                        sx={{
-                          position: "relative",
-                          aspectRatio: "1 / 1",
-                          borderRadius: 3,
-                          overflow: "hidden",
-                          border: "1px solid #E5E5E5",
-                          bgcolor: "#F7F7F7",
-                        }}
-                      >
-                        <Box
-                          component="img"
-                          src={url}
-                          alt={`New product ${index + 1}`}
-                          sx={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-
-                        <Chip
-                          label="New"
-                          size="small"
-                          sx={{
-                            position: "absolute",
-                            top: 7,
-                            left: 7,
-                            height: 24,
-                            bgcolor: "#F4C430",
-                            color: "#111",
-                            fontWeight: 900,
-                            fontSize: "0.62rem",
-                          }}
-                        />
-
-                        <IconButton
-                          type="button"
-                          size="small"
-                          onClick={() => removeSelectedImage(index)}
-                          disabled={saving}
-                          sx={{
-                            position: "absolute",
-                            top: 7,
-                            right: 7,
-                            width: 30,
-                            height: 30,
-                            bgcolor: "rgba(255,255,255,0.92)",
-                            color: "#B3261E",
-                            "&:hover": {
-                              bgcolor: "#FFFFFF",
-                            },
-                          }}
-                        >
-                          <DeleteOutlineRounded sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Box>
-                    ))}
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddPhotoAlternateRounded />}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={saving}
+                      sx={{
+                        minWidth: 0,
+                        px: 1.2,
+                        minHeight: 34,
+                        borderRadius: "6px",
+                        borderColor: "#DCDCDC",
+                        color: "#333333",
+                        fontSize: "0.68rem",
+                        fontWeight: 850,
+                        whiteSpace: "nowrap",
+                        "&:hover": {
+                          borderColor: "#D0AC28",
+                          bgcolor: "#FFF9E4",
+                        },
+                      }}
+                    >
+                      Add Images
+                    </Button>
                   </Box>
-                )}
-              </CardContent>
-            </MotionCard>
 
-            <MotionCard
-              elevation={0}
-              initial={{
-                opacity: 0,
-                y: 12,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.35,
-                delay: 0.15,
-              }}
-              sx={{
-                borderRadius: { xs: 3, md: 4 },
-              }}
-            >
-              <CardContent
-                sx={{
-                  p: { xs: 2, sm: 3 },
-                  "&:last-child": {
-                    pb: { xs: 2, sm: 3 },
-                  },
-                }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={1}
-                  sx={{ mb: 2 }}
-                >
-                  <VideoLibraryRounded
-                    sx={{
-                      color: "#A17B00",
-                    }}
+                  {allImages.length > 0 && (
+                    <Box
+                      sx={{
+                        mt: 1.5,
+                        display: "grid",
+                        gridTemplateColumns: {
+                          xs: "repeat(2, minmax(0, 1fr))",
+                          sm: "repeat(3, minmax(0, 1fr))",
+                          md: "repeat(4, minmax(0, 1fr))",
+                        },
+                        gap: 1,
+                      }}
+                    >
+                      <AnimatePresence>
+                        {existingImages.map((image, index) => (
+                          <MotionCard
+                            key={`existing-${image.url}-${index}`}
+                            layout
+                            initial={{ opacity: 0, scale: 0.94 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            elevation={0}
+                            sx={{
+                              position: "relative",
+                              aspectRatio: "1 / 1",
+                              overflow: "hidden",
+                              border: "1px solid #E6E6E6",
+                              borderRadius: "7px",
+                              bgcolor: "#F7F7F7",
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={image.url}
+                              alt={`Product ${index + 1}`}
+                              sx={{
+                                width: "100%",
+                                height: "100%",
+                                display: "block",
+                                objectFit: "cover",
+                              }}
+                            />
+
+                            <IconButton
+                              type="button"
+                              size="small"
+                              aria-label={`Remove existing image ${index + 1}`}
+                              onClick={() => removeExistingImage(index)}
+                              disabled={saving}
+                              sx={{
+                                position: "absolute",
+                                top: 5,
+                                right: 5,
+                                width: 28,
+                                height: 28,
+                                bgcolor: "rgba(255,255,255,0.95)",
+                                color: "#B3261E",
+                                "&:hover": { bgcolor: "#FFFFFF" },
+                              }}
+                            >
+                              <DeleteOutlineRounded sx={{ fontSize: 17 }} />
+                            </IconButton>
+                          </MotionCard>
+                        ))}
+
+                        {previewUrls.map((url, index) => (
+                          <MotionCard
+                            key={`preview-${url}`}
+                            layout
+                            initial={{ opacity: 0, scale: 0.94 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            elevation={0}
+                            sx={{
+                              position: "relative",
+                              aspectRatio: "1 / 1",
+                              overflow: "hidden",
+                              border: "1px solid #E6E6E6",
+                              borderRadius: "7px",
+                              bgcolor: "#F7F7F7",
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={url}
+                              alt={`New product ${index + 1}`}
+                              sx={{
+                                width: "100%",
+                                height: "100%",
+                                display: "block",
+                                objectFit: "cover",
+                              }}
+                            />
+
+                            <Chip
+                              label="New"
+                              size="small"
+                              sx={{
+                                position: "absolute",
+                                top: 5,
+                                left: 5,
+                                height: 21,
+                                borderRadius: "4px",
+                                bgcolor: "#F4C430",
+                                color: "#111",
+                                fontWeight: 900,
+                                fontSize: "0.6rem",
+                              }}
+                            />
+
+                            <IconButton
+                              type="button"
+                              size="small"
+                              aria-label={`Remove new image ${index + 1}`}
+                              onClick={() => removeSelectedImage(index)}
+                              disabled={saving}
+                              sx={{
+                                position: "absolute",
+                                top: 5,
+                                right: 5,
+                                width: 28,
+                                height: 28,
+                                bgcolor: "rgba(255,255,255,0.95)",
+                                color: "#B3261E",
+                                "&:hover": { bgcolor: "#FFFFFF" },
+                              }}
+                            >
+                              <DeleteOutlineRounded sx={{ fontSize: 17 }} />
+                            </IconButton>
+                          </MotionCard>
+                        ))}
+                      </AnimatePresence>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </MotionItem>
+
+            <MotionItem index={3}>
+              <Card elevation={0} sx={cardSx}>
+                <CardContent sx={contentSx}>
+                  <SectionHeader
+                    icon={<VideoLibraryRounded />}
+                    title="Product Video"
+                    description="Add an optional product demonstration."
                   />
 
-                  <Typography
-                    sx={{
-                      fontWeight: 900,
-                      fontSize: "1.1rem",
-                      color: "#111",
-                    }}
-                  >
-                    Product Video
-                  </Typography>
-                </Stack>
-
-                <TextField
-                  fullWidth
-                  label="Video URL"
-                  name="video"
-                  value={form.video}
-                  onChange={handleChange}
-                  disabled={saving}
-                  placeholder="https://..."
-                  helperText="Optional product demonstration video URL"
-                />
-              </CardContent>
-            </MotionCard>
+                  <TextField
+                    fullWidth
+                    label="Video URL"
+                    name="video"
+                    value={form.video}
+                    onChange={handleChange}
+                    disabled={saving}
+                    placeholder="https://..."
+                    helperText="Optional product demonstration video URL."
+                    sx={inputSx}
+                  />
+                </CardContent>
+              </Card>
+            </MotionItem>
           </Stack>
         </Grid>
 
-        <Grid item xs={12} md={4.5}>
+        <Grid item xs={12} md={4.5} sx={{ minWidth: 0 }}>
           <Stack
-            spacing={2.5}
+            spacing={{ xs: 1.2, sm: 1.5 }}
             sx={{
-              position: {
-                md: "sticky",
-              },
-              top: {
-                md: 90,
-              },
+              position: { md: "sticky" },
+              top: { md: 16 },
             }}
           >
-            <MotionCard
-              elevation={0}
-              initial={{
-                opacity: 0,
-                x: 12,
-              }}
-              animate={{
-                opacity: 1,
-                x: 0,
-              }}
-              transition={{ duration: 0.35 }}
-              sx={{
-                borderRadius: { xs: 3, md: 4 },
-              }}
-            >
-              <CardContent
+            <MotionItem index={1}>
+              <Card elevation={0} sx={cardSx}>
+                <CardContent sx={contentSx}>
+                  <SectionHeader
+                    icon={<TuneRounded />}
+                    title="Product Settings"
+                    description="Control how the product appears in your store."
+                  />
+
+                  <Stack spacing={0.5}>
+                    {[
+                      {
+                        name: "isActive",
+                        title: "Active Product",
+                        description:
+                          "Make this product available to customers.",
+                      },
+                      {
+                        name: "isFeatured",
+                        title: "Featured Product",
+                        description: "Show this product in featured sections.",
+                      },
+                      {
+                        name: "customizationAvailable",
+                        title: "Customization Available",
+                        description:
+                          "Allow customers to customize this product.",
+                      },
+                    ].map((item) => (
+                      <Box
+                        key={item.name}
+                        sx={{
+                          px: 0.8,
+                          py: 0.5,
+                          borderRadius: "6px",
+                          transition: "background-color 150ms ease",
+                          "&:hover": { bgcolor: "#FAFAFA" },
+                        }}
+                      >
+                        <FormControlLabel
+                          sx={{
+                            m: 0,
+                            width: "100%",
+                            alignItems: "center",
+                            "& .MuiFormControlLabel-label": {
+                              flex: 1,
+                              minWidth: 0,
+                            },
+                          }}
+                          control={
+                            <Checkbox
+                              name={item.name}
+                              checked={form[item.name]}
+                              onChange={handleBooleanChange}
+                              disabled={saving}
+                              size="small"
+                              sx={{
+                                p: 0.8,
+                                mr: 0.6,
+                                "&.Mui-checked": { color: "#D9B32C" },
+                              }}
+                            />
+                          }
+                          label={
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                sx={{
+                                  fontSize: "0.76rem",
+                                  fontWeight: 850,
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {item.title}
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  mt: 0.2,
+                                  fontSize: "0.66rem",
+                                  lineHeight: 1.45,
+                                  color: "#898989",
+                                }}
+                              >
+                                {item.description}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </Box>
+                    ))}
+                  </Stack>
+
+                  <AnimatePresence initial={false}>
+                    {form.customizationAvailable && (
+                      <motion.div
+                        key="customization-options"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.22 }}
+                        style={{ overflow: "hidden" }}
+                      >
+                        <Divider sx={{ my: 1.5 }} />
+
+                        <Typography
+                          sx={{
+                            mb: 1,
+                            fontSize: "0.76rem",
+                            fontWeight: 900,
+                          }}
+                        >
+                          Customization Options
+                        </Typography>
+
+                        <Stack direction="row" flexWrap="wrap" gap={0.7}>
+                          {customizationTypes.map((option) => {
+                            const selected =
+                              form.customizationOptions.includes(option);
+
+                            return (
+                              <Chip
+                                key={option}
+                                label={option}
+                                clickable
+                                onClick={() =>
+                                  handleCustomizationChange(option)
+                                }
+                                sx={{
+                                  maxWidth: "100%",
+                                  height: 29,
+                                  borderRadius: "5px",
+                                  bgcolor: selected ? "#F4C430" : "#F7F7F7",
+                                  color: selected ? "#171717" : "#666666",
+                                  border: selected
+                                    ? "1px solid #D7AB00"
+                                    : "1px solid #E7E7E7",
+                                  fontWeight: 800,
+                                  fontSize: "0.65rem",
+                                  "& .MuiChip-label": {
+                                    px: 1,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  },
+                                  "&:hover": {
+                                    bgcolor: selected ? "#E7B700" : "#FFFBEA",
+                                  },
+                                }}
+                              />
+                            );
+                          })}
+                        </Stack>
+
+                        {!form.customizationOptions.length && (
+                          <FormHelperText error sx={{ mt: 1 }}>
+                            Select at least one option.
+                          </FormHelperText>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </MotionItem>
+
+            <MotionItem index={2}>
+              <Card
+                elevation={0}
                 sx={{
-                  p: { xs: 2, sm: 3 },
-                  "&:last-child": {
-                    pb: { xs: 2, sm: 3 },
+                  ...cardSx,
+                  bgcolor: "#151515",
+                  color: "#FFFFFF",
+                  borderColor: "#292929",
+                  "&:hover": {
+                    borderColor: "#6B5B28",
+                    boxShadow: "0 8px 26px rgba(0,0,0,0.12)",
                   },
                 }}
               >
-                <Typography
-                  sx={{
-                    fontWeight: 900,
-                    fontSize: "1.1rem",
-                    color: "#111",
-                  }}
-                >
-                  Product Settings
-                </Typography>
-
-                <Typography
-                  sx={{
-                    mt: 0.4,
-                    mb: 2,
-                    color: "#888",
-                    fontSize: "0.78rem",
-                  }}
-                >
-                  Control how this product appears in the store.
-                </Typography>
-
-                <Stack spacing={0.5}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        name="isActive"
-                        checked={form.isActive}
-                        onChange={handleBooleanChange}
-                        disabled={saving}
-                        sx={{
-                          "&.Mui-checked": {
-                            color: "#F4C430",
-                          },
-                        }}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography
-                          sx={{
-                            fontSize: "0.86rem",
-                            fontWeight: 800,
-                          }}
-                        >
-                          Active Product
-                        </Typography>
-
-                        <Typography
-                          sx={{
-                            fontSize: "0.7rem",
-                            color: "#999",
-                          }}
-                        >
-                          Make this product available to customers.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        name="isFeatured"
-                        checked={form.isFeatured}
-                        onChange={handleBooleanChange}
-                        disabled={saving}
-                        sx={{
-                          "&.Mui-checked": {
-                            color: "#F4C430",
-                          },
-                        }}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography
-                          sx={{
-                            fontSize: "0.86rem",
-                            fontWeight: 800,
-                          }}
-                        >
-                          Featured Product
-                        </Typography>
-
-                        <Typography
-                          sx={{
-                            fontSize: "0.7rem",
-                            color: "#999",
-                          }}
-                        >
-                          Show this product in featured sections.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        name="customizationAvailable"
-                        checked={form.customizationAvailable}
-                        onChange={handleBooleanChange}
-                        disabled={saving}
-                        sx={{
-                          "&.Mui-checked": {
-                            color: "#F4C430",
-                          },
-                        }}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography
-                          sx={{
-                            fontSize: "0.86rem",
-                            fontWeight: 800,
-                          }}
-                        >
-                          Customization Available
-                        </Typography>
-
-                        <Typography
-                          sx={{
-                            fontSize: "0.7rem",
-                            color: "#999",
-                          }}
-                        >
-                          Allow customers to customize this product.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </Stack>
-
-                {form.customizationAvailable && (
-                  <>
-                    <Divider sx={{ my: 2 }} />
-
-                    <Typography
+                <CardContent sx={contentSx}>
+                  <Stack direction="row" spacing={1.1} alignItems="center">
+                    <Box
                       sx={{
-                        fontSize: "0.82rem",
-                        fontWeight: 900,
-                        color: "#333",
-                        mb: 1,
+                        width: 37,
+                        height: 37,
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        borderRadius: "7px",
+                        bgcolor: "#F4C430",
+                        color: "#151515",
                       }}
                     >
-                      Customization Options
-                    </Typography>
+                      <CloudUploadRounded sx={{ fontSize: 21 }} />
+                    </Box>
 
-                    <Stack direction="row" flexWrap="wrap" gap={0.8}>
-                      {customizationTypes.map((option) => {
-                        const selected =
-                          form.customizationOptions.includes(option);
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          fontSize: "0.9rem",
+                          fontWeight: 900,
+                          color: "#FFFFFF",
+                        }}
+                      >
+                        Ready to publish?
+                      </Typography>
+                      <Typography
+                        sx={{
+                          mt: 0.25,
+                          fontSize: "0.68rem",
+                          color: "#B8B8B8",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Review your information before saving.
+                      </Typography>
+                    </Box>
+                  </Stack>
 
-                        return (
-                          <Chip
-                            key={option}
-                            label={option}
-                            clickable
-                            onClick={() => handleCustomizationChange(option)}
-                            sx={{
-                              bgcolor: selected ? "#F4C430" : "#F6F6F6",
-                              color: selected ? "#111" : "#666",
-                              border: selected
-                                ? "1px solid #D7AB00"
-                                : "1px solid #E5E5E5",
-                              fontWeight: 800,
-                              fontSize: "0.68rem",
-                              "&:hover": {
-                                bgcolor: selected ? "#E7B700" : "#FFFBEA",
-                              },
-                            }}
-                          />
-                        );
-                      })}
+                  <Divider sx={{ my: 1.7, borderColor: "#303030" }} />
+
+                  <Stack spacing={1}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      spacing={1}
+                    >
+                      <Typography
+                        sx={{ fontSize: "0.72rem", color: "#B8B8B8" }}
+                      >
+                        Product images
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "0.75rem",
+                          fontWeight: 850,
+                          color: "#FFF",
+                        }}
+                      >
+                        {allImages.length}
+                      </Typography>
                     </Stack>
 
-                    {!form.customizationOptions.length && (
-                      <FormHelperText error sx={{ mt: 1 }}>
-                        Select at least one option.
-                      </FormHelperText>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </MotionCard>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      spacing={1}
+                    >
+                      <Typography
+                        sx={{ fontSize: "0.72rem", color: "#B8B8B8" }}
+                      >
+                        Product status
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={form.isActive ? "Active" : "Inactive"}
+                        sx={{
+                          height: 23,
+                          borderRadius: "5px",
+                          bgcolor: form.isActive ? "#263C2D" : "#343434",
+                          color: form.isActive ? "#A5E6B6" : "#D0D0D0",
+                          fontSize: "0.65rem",
+                          fontWeight: 850,
+                        }}
+                      />
+                    </Stack>
 
-            <MotionCard
-              elevation={0}
-              initial={{
-                opacity: 0,
-                x: 12,
-              }}
-              animate={{
-                opacity: 1,
-                x: 0,
-              }}
-              transition={{
-                duration: 0.35,
-                delay: 0.05,
-              }}
-              sx={{
-                borderRadius: { xs: 3, md: 4 },
-                bgcolor: "#111111",
-                color: "#FFFFFF",
-                border: "1px solid #222222",
-              }}
-            >
-              <CardContent
-                sx={{
-                  p: { xs: 2, sm: 3 },
-                  "&:last-child": {
-                    pb: { xs: 2, sm: 3 },
-                  },
-                }}
-              >
-                <Stack direction="row" spacing={1.2} alignItems="center">
-                  <Box
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      spacing={1}
+                    >
+                      <Typography
+                        sx={{ fontSize: "0.72rem", color: "#B8B8B8" }}
+                      >
+                        Customization
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "0.7rem",
+                          fontWeight: 800,
+                          color: "#FFFFFF",
+                        }}
+                      >
+                        {form.customizationAvailable ? "Enabled" : "Disabled"}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+
+                  <Button
+                    fullWidth
+                    type="submit"
+                    disabled={saving}
+                    variant="contained"
+                    startIcon={
+                      saving ? (
+                        <CircularProgress size={16} sx={{ color: "#151515" }} />
+                      ) : (
+                        <SaveRounded />
+                      )
+                    }
                     sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 2.5,
-                      display: "grid",
-                      placeItems: "center",
+                      mt: 2,
+                      minHeight: 42,
+                      borderRadius: "7px",
                       bgcolor: "#F4C430",
-                      color: "#111",
+                      color: "#151515",
+                      fontSize: "0.75rem",
+                      fontWeight: 900,
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#E5B500", boxShadow: "none" },
+                      "&:disabled": {
+                        bgcolor: "#363636",
+                        color: "#858585",
+                      },
                     }}
                   >
-                    <CloudUploadRounded />
-                  </Box>
+                    {saving
+                      ? "Saving..."
+                      : isEdit
+                        ? "Update Product"
+                        : "Create Product"}
+                  </Button>
 
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontWeight: 900,
-                        color: "#fff",
-                        fontSize: "0.98rem",
-                      }}
-                    >
-                      Ready to publish?
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        mt: 0.25,
-                        color: "#AAAAAA",
-                        fontSize: "0.72rem",
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      Review your information before saving the product.
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Button
-                  fullWidth
-                  type="submit"
-                  disabled={saving}
-                  variant="contained"
-                  startIcon={
-                    saving ? (
-                      <CircularProgress size={18} sx={{ color: "#555" }} />
-                    ) : (
-                      <SaveRounded />
-                    )
-                  }
-                  sx={{
-                    mt: 2.5,
-                    minHeight: 48,
-                    borderRadius: 2.5,
-                    bgcolor: "#F4C430",
-                    color: "#111",
-                    fontWeight: 900,
-                    "&:hover": {
-                      bgcolor: "#E5B500",
-                    },
-                    "&:disabled": {
-                      bgcolor: "#333",
-                      color: "#777",
-                    },
-                  }}
-                >
-                  {saving
-                    ? "Saving..."
-                    : isEdit
-                      ? "Update Product"
-                      : "Create Product"}
-                </Button>
-
-                <Button
-                  fullWidth
-                  type="button"
-                  onClick={() => navigate("/admin/products")}
-                  disabled={saving}
-                  sx={{
-                    mt: 1,
-                    minHeight: 42,
-                    borderRadius: 2.5,
-                    color: "#AAAAAA",
-                    fontWeight: 800,
-                    "&:hover": {
-                      bgcolor: "#1B1B1B",
-                      color: "#FFFFFF",
-                    },
-                  }}
-                >
-                  Cancel
-                </Button>
-              </CardContent>
-            </MotionCard>
+                  <Button
+                    fullWidth
+                    type="button"
+                    onClick={() => navigate("/admin/products")}
+                    disabled={saving}
+                    startIcon={<ArrowBackRounded />}
+                    sx={{
+                      minHeight: 35,
+                      borderRadius: "6px",
+                      color: "#BDBDBD",
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      "&:hover": {
+                        bgcolor: "#242424",
+                        color: "#FFFFFF",
+                      },
+                    }}
+                  >
+                    Cancel and go back
+                  </Button>
+                </CardContent>
+              </Card>
+            </MotionItem>
           </Stack>
         </Grid>
       </Grid>

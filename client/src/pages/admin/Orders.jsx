@@ -1,7 +1,4 @@
-// client/src/components/admin/Orders.jsx
-
 import React, { useEffect, useMemo, useState } from "react";
-
 import {
   Alert,
   Box,
@@ -24,10 +21,8 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
-
 import {
   AccessTimeRounded,
-  ArrowForwardIosRounded,
   CheckCircleRounded,
   ExpandMoreRounded,
   LocalShippingRounded,
@@ -39,20 +34,25 @@ import {
   VisibilityRounded,
   DeleteOutlineRounded,
   DeleteSweepRounded,
+  CloseRounded,
+  ReceiptLongRounded,
+  PaymentsRounded,
+  CalendarMonthRounded,
+  Inventory2Rounded,
+  ArrowForwardRounded,
 } from "@mui/icons-material";
-
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-
 import api from "../../services/api";
 import formatCurrency from "../../utils/formatCurrency";
 
 const MotionCard = motion(Card);
+const MotionBox = motion(Box);
 
-const GOLD = "#F4C430";
-const GOLD_DARK = "#9A7600";
-const DARK = "#151515";
-const MUTED = "#777";
+const GOLD = "#FFD000";
+const GOLD_DARK = "#896B00";
+const DARK = "#171717";
+const MUTED = "#858585";
 
 const ORDER_STATUSES = [
   "All",
@@ -70,70 +70,27 @@ const ORDER_STATUSES = [
 ];
 
 const QUICK_STATUSES = [
-  {
-    label: "All",
-    icon: <ShoppingBagRounded />,
-  },
-  {
-    label: "Pending",
-    icon: <AccessTimeRounded />,
-  },
-  {
-    label: "Confirmed",
-    icon: <CheckCircleRounded />,
-  },
-  {
-    label: "Production",
-    icon: <ProductionQuantityLimitsRounded />,
-  },
-  {
-    label: "Shipped",
-    icon: <LocalShippingRounded />,
-  },
-  {
-    label: "Delivered",
-    icon: <CheckCircleRounded />,
-  },
+  { label: "All", icon: <ShoppingBagRounded /> },
+  { label: "Pending", icon: <AccessTimeRounded /> },
+  { label: "Confirmed", icon: <CheckCircleRounded /> },
+  { label: "Production", icon: <ProductionQuantityLimitsRounded /> },
+  { label: "Shipped", icon: <LocalShippingRounded /> },
+  { label: "Delivered", icon: <CheckCircleRounded /> },
 ];
 
 const DATE_FILTERS = [
-  {
-    value: "all",
-    label: "All Dates",
-  },
-  {
-    value: "today",
-    label: "Today",
-  },
-  {
-    value: "yesterday",
-    label: "Yesterday",
-  },
-  {
-    value: "week",
-    label: "This Week",
-  },
-  {
-    value: "lastMonth",
-    label: "Last Month",
-  },
+  { value: "all", label: "All Dates" },
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "week", label: "This Week" },
+  { value: "lastMonth", label: "Last Month" },
 ];
 
 const getOrdersFromResponse = (data) => {
   if (Array.isArray(data)) return data;
-
-  if (Array.isArray(data?.orders)) {
-    return data.orders;
-  }
-
-  if (Array.isArray(data?.data)) {
-    return data.data;
-  }
-
-  if (Array.isArray(data?.data?.orders)) {
-    return data.data.orders;
-  }
-
+  if (Array.isArray(data?.orders)) return data.orders;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.orders)) return data.data.orders;
   return [];
 };
 
@@ -215,7 +172,6 @@ const getCustomer = (order) => order?.customer || order?.guestCustomer || {};
 
 const getCustomerName = (order) => {
   const customer = getCustomer(order);
-
   return (
     customer?.name || order?.customerName || order?.name || "Guest Customer"
   );
@@ -223,13 +179,11 @@ const getCustomerName = (order) => {
 
 const getCustomerEmail = (order) => {
   const customer = getCustomer(order);
-
   return customer?.email || order?.customerEmail || order?.email || "—";
 };
 
 const getCustomerMobile = (order) => {
   const customer = getCustomer(order);
-
   return (
     customer?.mobile ||
     customer?.phone ||
@@ -253,7 +207,6 @@ const getItemCount = (order) => {
   if (Array.isArray(order?.items)) {
     return order.items.reduce((total, item) => {
       const quantity = Number(item?.quantity ?? item?.qty ?? 1);
-
       return total + Math.max(1, quantity || 1);
     }, 0);
   }
@@ -278,10 +231,7 @@ const formatDate = (value) => {
   if (!value) return "—";
 
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
+  if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -294,10 +244,7 @@ const formatDateTime = (value) => {
   if (!value) return "—";
 
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
+  if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleString("en-IN", {
     day: "2-digit",
@@ -336,9 +283,7 @@ const getDateRange = (filter) => {
 
   if (filter === "week") {
     const start = new Date(startOfToday);
-
     const day = start.getDay();
-
     const mondayOffset = day === 0 ? 6 : day - 1;
 
     start.setDate(start.getDate() - mondayOffset);
@@ -371,10 +316,7 @@ const getDateRange = (filter) => {
     };
   }
 
-  return {
-    from: "",
-    to: "",
-  };
+  return { from: "", to: "" };
 };
 
 const getPaymentStyles = (order) => {
@@ -403,292 +345,273 @@ const getPaymentStyles = (order) => {
   };
 };
 
-const StatCard = ({ label, value, icon, active, onClick }) => {
-  return (
-    <MotionCard
-      elevation={0}
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
+const surfaceSx = {
+  borderRadius: "9px",
+  border: "1px solid #EAEAE5",
+  bgcolor: "#FFFFFF",
+  boxShadow: "0 2px 10px rgba(0,0,0,.025)",
+};
+
+const smallButtonSx = {
+  minHeight: { xs: 32, sm: 36 },
+  borderRadius: "6px",
+  textTransform: "none",
+  fontWeight: 800,
+  fontSize: { xs: "0.65rem", sm: "0.72rem" },
+};
+
+const StatCard = ({ label, value, icon, active, onClick }) => (
+  <MotionCard
+    elevation={0}
+    whileHover={{ y: -2 }}
+    whileTap={{ scale: 0.985 }}
+    onClick={onClick}
+    sx={{
+      ...surfaceSx,
+      minWidth: 0,
+      cursor: onClick ? "pointer" : "default",
+      borderColor: active ? "#D5B500" : "#EAEAE5",
+      bgcolor: active ? "#FFFBE8" : "#FFFFFF",
+      transition: "border-color .2s, background-color .2s",
+    }}
+  >
+    <CardContent
       sx={{
-        borderRadius: 3,
-        cursor: onClick ? "pointer" : "default",
-        border: active ? `1.5px solid ${GOLD}` : "1px solid #ECECEC",
-        bgcolor: active ? "#FFFBEA" : "#FFF",
-        transition: "border-color .2s ease, background-color .2s ease",
-        minWidth: 0,
+        p: { xs: 1, sm: 1.45 },
+        "&:last-child": { pb: { xs: 1, sm: 1.45 } },
       }}
     >
-      <CardContent
-        sx={{
-          p: { xs: 1.25, sm: 1.6 },
-          "&:last-child": {
-            pb: { xs: 1.25, sm: 1.6 },
-          },
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Box
+      <Stack direction="row" alignItems="center" spacing={{ xs: 0.65, sm: 1 }}>
+        <Box
+          sx={{
+            width: { xs: 28, sm: 34 },
+            height: { xs: 28, sm: 34 },
+            flexShrink: 0,
+            borderRadius: "7px",
+            display: "grid",
+            placeItems: "center",
+            bgcolor: active ? GOLD : "#F4F4F0",
+            color: active ? DARK : "#777",
+            "& svg": { fontSize: { xs: 16, sm: 19 } },
+          }}
+        >
+          {icon}
+        </Box>
+
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
             sx={{
-              width: { xs: 32, sm: 36 },
-              height: { xs: 32, sm: 36 },
-              flexShrink: 0,
-              borderRadius: 2,
-              display: "grid",
-              placeItems: "center",
-              bgcolor: active ? GOLD : "#F6F6F6",
-              color: active ? DARK : "#666",
+              color: MUTED,
+              fontSize: { xs: "0.58rem", sm: "0.67rem" },
+              fontWeight: 750,
+              lineHeight: 1.25,
             }}
           >
-            {React.cloneElement(icon, {
-              sx: {
-                fontSize: {
-                  xs: 17,
-                  sm: 19,
-                },
-              },
-            })}
-          </Box>
+            {label}
+          </Typography>
 
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              sx={{
-                color: "#929292",
-                fontSize: {
-                  xs: "0.62rem",
-                  sm: "0.68rem",
-                },
-                fontWeight: 700,
-                lineHeight: 1.1,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {label}
-            </Typography>
+          <Typography
+            sx={{
+              mt: 0.3,
+              color: DARK,
+              fontSize: { xs: "1rem", sm: "1.2rem" },
+              lineHeight: 1,
+              fontWeight: 900,
+              letterSpacing: "-.04em",
+            }}
+          >
+            {value}
+          </Typography>
+        </Box>
+      </Stack>
+    </CardContent>
+  </MotionCard>
+);
 
-            <Typography
-              sx={{
-                mt: 0.25,
-                color: DARK,
-                fontSize: {
-                  xs: "0.95rem",
-                  sm: "1.05rem",
-                },
-                lineHeight: 1,
-                fontWeight: 900,
-              }}
-            >
-              {value}
-            </Typography>
-          </Box>
-        </Stack>
-      </CardContent>
-    </MotionCard>
-  );
-};
+const SummaryMetric = ({ label, value }) => (
+  <Box sx={{ minWidth: 0, flex: 1 }}>
+    <Typography
+      sx={{
+        color: "#999",
+        fontSize: { xs: "0.58rem", sm: "0.65rem" },
+        fontWeight: 750,
+      }}
+    >
+      {label}
+    </Typography>
+
+    <Typography
+      sx={{
+        mt: 0.25,
+        color: DARK,
+        fontSize: { xs: "0.75rem", sm: "0.9rem" },
+        fontWeight: 900,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {value}
+    </Typography>
+  </Box>
+);
+
+const InfoBox = ({ label, value, chip }) => (
+  <Box
+    sx={{
+      minWidth: 0,
+      p: { xs: 0.8, sm: 1 },
+      borderRadius: "6px",
+      bgcolor: "#F8F8F5",
+    }}
+  >
+    <Typography
+      sx={{
+        color: "#999",
+        fontSize: "0.58rem",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        letterSpacing: ".035em",
+      }}
+    >
+      {label}
+    </Typography>
+
+    <Typography
+      title={String(value || "—")}
+      sx={{
+        mt: 0.3,
+        color: "#333",
+        fontSize: { xs: "0.65rem", sm: "0.72rem" },
+        fontWeight: 750,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {value || "—"}
+    </Typography>
+
+    {chip}
+  </Box>
+);
 
 const OrderCard = ({ order, index, onOpen, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
 
   const id = getOrderId(order);
   const orderNumber = getOrderNumber(order, `Order ${index + 1}`);
-
   const status = getOrderStatus(order);
   const statusStyle = getStatusStyles(status);
-
   const customerName = getCustomerName(order);
-
   const customerEmail = getCustomerEmail(order);
-
   const customerMobile = getCustomerMobile(order);
-
   const amount = getOrderAmount(order);
   const itemCount = getItemCount(order);
   const trackingNumber = getTrackingNumber(order);
-
   const paymentStyle = getPaymentStyles(order);
-
   const createdAt = order?.createdAt || order?.createdOn || order?.date;
 
   return (
     <MotionCard
       layout
       elevation={0}
-      initial={{
-        opacity: 0,
-        y: 12,
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-      }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -5, scale: 0.99 }}
       transition={{
-        duration: 0.25,
-        delay: Math.min(index * 0.035, 0.22),
+        duration: 0.23,
+        delay: Math.min(index * 0.025, 0.18),
+        layout: { duration: 0.2 },
       }}
-      onClick={() => {
-        setExpanded((value) => !value);
-      }}
+      onClick={() => setExpanded((value) => !value)}
       sx={{
-        cursor: "pointer",
+        ...surfaceSx,
         overflow: "hidden",
-        borderRadius: {
-          xs: 2.5,
-          sm: 3,
-        },
-        border: "1px solid #EAEAEA",
-        bgcolor: "#FFF",
-        transition:
-          "box-shadow .2s ease, border-color .2s ease, transform .2s ease",
+        cursor: "pointer",
+        transition: "border-color .2s, box-shadow .2s",
         "&:hover": {
-          borderColor: "#E4CD6E",
-          boxShadow: "0 12px 32px rgba(0,0,0,.06)",
+          borderColor: "#DCC65B",
+          boxShadow: "0 7px 22px rgba(0,0,0,.045)",
         },
       }}
     >
       <CardContent
         sx={{
-          p: {
-            xs: 1.25,
-            sm: 1.6,
-            md: 1.8,
-          },
+          p: { xs: 1, sm: 1.45, md: 1.65 },
           "&:last-child": {
-            pb: {
-              xs: 1.25,
-              sm: 1.6,
-              md: 1.8,
-            },
+            pb: { xs: 1, sm: 1.45, md: 1.65 },
           },
         }}
       >
         {/* MAIN ORDER ROW */}
         <Stack
           direction="row"
-          spacing={{
-            xs: 1,
-            sm: 1.5,
-          }}
+          spacing={{ xs: 0.7, sm: 1.2 }}
           alignItems="center"
         >
-          {/* Icon */}
           <Box
             sx={{
-              width: {
-                xs: 40,
-                sm: 46,
-              },
-              height: {
-                xs: 40,
-                sm: 46,
-              },
+              width: { xs: 33, sm: 42 },
+              height: { xs: 33, sm: 42 },
               flexShrink: 0,
-              borderRadius: 2.5,
+              borderRadius: "7px",
               display: "grid",
               placeItems: "center",
-              bgcolor: "#FFF8D9",
+              bgcolor: "#FFF7D5",
               color: GOLD_DARK,
             }}
           >
-            <ShoppingBagRounded
-              sx={{
-                fontSize: {
-                  xs: 21,
-                  sm: 24,
-                },
-              }}
-            />
+            <ShoppingBagRounded sx={{ fontSize: { xs: 18, sm: 23 } }} />
           </Box>
 
-          {/* Order/customer */}
-          <Box
-            sx={{
-              minWidth: 0,
-              flex: 1,
-            }}
-          >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack
               direction="row"
-              spacing={0.7}
+              spacing={0.6}
               alignItems="center"
-              sx={{
-                minWidth: 0,
-                mb: 0.3,
-              }}
+              sx={{ minWidth: 0, mb: 0.35 }}
             >
               <Typography
+                title={String(orderNumber)}
                 sx={{
                   minWidth: 0,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   color: DARK,
-                  fontSize: {
-                    xs: "0.78rem",
-                    sm: "0.9rem",
-                  },
+                  fontSize: { xs: "0.7rem", sm: "0.85rem" },
                   fontWeight: 900,
                 }}
               >
                 {orderNumber}
               </Typography>
-
-              <Chip
-                label={status}
-                size="small"
-                sx={{
-                  flexShrink: 0,
-                  height: {
-                    xs: 21,
-                    sm: 24,
-                  },
-                  borderRadius: 1.5,
-                  fontSize: {
-                    xs: "0.56rem",
-                    sm: "0.62rem",
-                  },
-                  fontWeight: 900,
-                  color: statusStyle.color,
-                  bgcolor: statusStyle.bgcolor,
-                  border: `1px solid ${statusStyle.border}`,
-                  "& .MuiChip-label": {
-                    px: {
-                      xs: 0.7,
-                      sm: 0.9,
-                    },
-                  },
-                }}
-              />
             </Stack>
 
             <Stack
               direction="row"
-              spacing={0.55}
+              spacing={0.45}
               alignItems="center"
-              sx={{
-                minWidth: 0,
-              }}
+              sx={{ minWidth: 0 }}
             >
               <PersonRounded
                 sx={{
-                  fontSize: 14,
-                  color: "#A0A0A0",
+                  fontSize: 13,
+                  color: "#999",
                   flexShrink: 0,
                 }}
               />
 
               <Typography
+                title={customerName}
                 sx={{
                   minWidth: 0,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   color: "#666",
-                  fontSize: {
-                    xs: "0.68rem",
-                    sm: "0.74rem",
-                  },
-                  fontWeight: 600,
+                  fontSize: { xs: "0.63rem", sm: "0.73rem" },
+                  fontWeight: 650,
                 }}
               >
                 {customerName}
@@ -696,21 +619,13 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
             </Stack>
           </Box>
 
-          {/* Total */}
-          <Box
-            sx={{
-              flexShrink: 0,
-              textAlign: "right",
-            }}
-          >
+          <Box sx={{ flexShrink: 0, textAlign: "right" }}>
             <Typography
               sx={{
                 color: "#999",
-                fontSize: {
-                  xs: "0.57rem",
-                  sm: "0.63rem",
-                },
-                fontWeight: 700,
+                fontSize: { xs: "0.5rem", sm: "0.58rem" },
+                fontWeight: 800,
+                letterSpacing: ".04em",
               }}
             >
               TOTAL
@@ -718,78 +633,79 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
 
             <Typography
               sx={{
-                mt: 0.15,
+                mt: 0.2,
                 color: DARK,
-                fontSize: {
-                  xs: "0.83rem",
-                  sm: "0.95rem",
-                },
+                fontSize: { xs: "0.75rem", sm: "0.93rem" },
                 fontWeight: 900,
+                letterSpacing: "-.025em",
               }}
             >
               {formatCurrency(amount)}
             </Typography>
           </Box>
 
-          {/* Expand */}
           <IconButton
             size="small"
+            aria-label={expanded ? "Collapse order" : "Expand order"}
             onClick={(event) => {
               event.stopPropagation();
               setExpanded((value) => !value);
             }}
             sx={{
-              width: {
-                xs: 30,
-                sm: 34,
-              },
-              height: {
-                xs: 30,
-                sm: 34,
-              },
+              width: { xs: 25, sm: 31 },
+              height: { xs: 25, sm: 31 },
               flexShrink: 0,
-              bgcolor: "#F7F7F7",
+              borderRadius: "6px",
+              bgcolor: expanded ? "#FFF4BF" : "#F5F5F2",
               color: "#666",
-              "&:hover": {
-                bgcolor: "#FFF8D9",
-                color: GOLD_DARK,
-              },
             }}
           >
             <ExpandMoreRounded
               sx={{
                 fontSize: 20,
                 transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "transform .2s ease",
+                transition: "transform .22s ease",
               }}
             />
           </IconButton>
         </Stack>
 
-        {/* QUICK INFO */}
+        {/* STATUS AND ORDER META */}
         <Stack
           direction="row"
           alignItems="center"
-          spacing={0}
+          spacing={0.6}
           sx={{
-            mt: {
-              xs: 1,
-              sm: 1.25,
-            },
-            ml: {
-              xs: 5,
-              sm: 6,
-            },
+            mt: 1,
             minWidth: 0,
+            flexWrap: "wrap",
+            rowGap: 0.6,
           }}
         >
+          <Chip
+            label={status}
+            size="small"
+            sx={{
+              maxWidth: "100%",
+              height: { xs: 21, sm: 23 },
+              borderRadius: "5px",
+              fontSize: { xs: "0.55rem", sm: "0.62rem" },
+              fontWeight: 850,
+              color: statusStyle.color,
+              bgcolor: statusStyle.bgcolor,
+              border: `1px solid ${statusStyle.border}`,
+              "& .MuiChip-label": {
+                px: 0.8,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+            }}
+          />
+
           <Typography
             sx={{
               color: "#858585",
-              fontSize: {
-                xs: "0.6rem",
-                sm: "0.66rem",
-              },
+              fontSize: { xs: "0.58rem", sm: "0.65rem" },
               whiteSpace: "nowrap",
             }}
           >
@@ -798,47 +714,19 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
 
           <Box
             sx={{
-              mx: 0.8,
               width: 3,
               height: 3,
               borderRadius: "50%",
               bgcolor: "#C9C9C9",
+              flexShrink: 0,
             }}
           />
 
           <Typography
             sx={{
               minWidth: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              color: trackingNumber === "Not assigned" ? "#AAA" : "#777",
-              fontSize: {
-                xs: "0.6rem",
-                sm: "0.66rem",
-              },
-            }}
-          >
-            {trackingNumber}
-          </Typography>
-
-          <Box
-            sx={{
-              mx: 0.8,
-              width: 3,
-              height: 3,
-              borderRadius: "50%",
-              bgcolor: "#C9C9C9",
-            }}
-          />
-
-          <Typography
-            sx={{
               color: "#858585",
-              fontSize: {
-                xs: "0.6rem",
-                sm: "0.66rem",
-              },
+              fontSize: { xs: "0.58rem", sm: "0.65rem" },
               whiteSpace: "nowrap",
             }}
           >
@@ -846,31 +734,27 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
           </Typography>
         </Stack>
 
-        {/* EXPANDED DETAILS */}
-        <Collapse in={expanded} timeout={250} unmountOnExit>
+        <Collapse in={expanded} timeout={230} unmountOnExit>
           <Box
             sx={{
-              mt: 1.5,
-              pt: 1.5,
-              borderTop: "1px solid #EEEEEE",
+              mt: 1.3,
+              pt: 1.3,
+              borderTop: "1px solid #EEEEEA",
             }}
           >
             <Box
               sx={{
                 display: "grid",
                 gridTemplateColumns: {
-                  xs: "repeat(2, minmax(0, 1fr))",
-                  sm: "repeat(4, minmax(0, 1fr))",
+                  xs: "repeat(2,minmax(0,1fr))",
+                  sm: "repeat(4,minmax(0,1fr))",
                 },
-                gap: {
-                  xs: 1,
-                  sm: 1.3,
-                },
+                gap: 0.8,
               }}
             >
               <InfoBox label="Customer" value={customerName} />
-
               <InfoBox label="Mobile" value={customerMobile} />
+              <InfoBox label="Email" value={customerEmail} />
 
               <InfoBox
                 label="Payment"
@@ -880,10 +764,11 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
                     size="small"
                     label={paymentStyle.label}
                     sx={{
+                      mt: 0.5,
                       height: 20,
-                      mt: 0.35,
-                      fontSize: "0.58rem",
-                      fontWeight: 800,
+                      borderRadius: "4px",
+                      fontSize: "0.57rem",
+                      fontWeight: 850,
                       color: paymentStyle.color,
                       bgcolor: paymentStyle.bgcolor,
                     }}
@@ -891,50 +776,41 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
                 }
               />
 
-              <InfoBox label="Ordered" value={formatDateTime(createdAt)} />
+              <InfoBox label="Order date" value={formatDateTime(createdAt)} />
+
+              <InfoBox label="Tracking ID" value={trackingNumber} />
+
+              <InfoBox
+                label="Quantity"
+                value={`${itemCount || 0} ${
+                  itemCount === 1 ? "item" : "items"
+                }`}
+              />
+
+              <InfoBox label="Order total" value={formatCurrency(amount)} />
             </Box>
 
             <Stack
-              direction={{
-                xs: "column",
-                sm: "row",
-              }}
-              spacing={0.8}
-              sx={{
-                mt: 1.25,
-              }}
+              direction={{ xs: "column", sm: "row" }}
+              spacing={0.7}
+              sx={{ mt: 1.1 }}
             >
               <Button
                 fullWidth
                 size="small"
-                variant="outlined"
-                startIcon={
-                  <VisibilityRounded
-                    sx={{
-                      fontSize: 17,
-                    }}
-                  />
-                }
+                variant="contained"
+                startIcon={<VisibilityRounded />}
                 disabled={!id}
                 onClick={(event) => {
                   event.stopPropagation();
-
-                  if (id) {
-                    onOpen(id);
-                  }
+                  if (id) onOpen(id);
                 }}
                 sx={{
-                  minHeight: 36,
-                  borderRadius: 2,
-                  borderColor: "#E1E1E1",
-                  color: "#333",
-                  textTransform: "none",
-                  fontSize: "0.72rem",
-                  fontWeight: 800,
-                  "&:hover": {
-                    borderColor: GOLD,
-                    bgcolor: "#FFFBEA",
-                  },
+                  ...smallButtonSx,
+                  bgcolor: GOLD,
+                  color: DARK,
+                  "&:hover": { bgcolor: "#F0C400" },
+                  "& .MuiButton-startIcon svg": { fontSize: 16 },
                 }}
               >
                 View Order
@@ -945,70 +821,48 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
                   fullWidth
                   size="small"
                   variant="outlined"
-                  startIcon={
-                    <LocalShippingRounded
-                      sx={{
-                        fontSize: 17,
-                      }}
-                    />
-                  }
+                  startIcon={<LocalShippingRounded />}
                   onClick={(event) => {
                     event.stopPropagation();
-
                     window.open(
                       `/tracking/${encodeURIComponent(trackingNumber)}`,
                       "_blank",
                     );
                   }}
                   sx={{
-                    minHeight: 36,
-                    borderRadius: 2,
-                    borderColor: "#E1E1E1",
-                    color: "#333",
-                    textTransform: "none",
-                    fontSize: "0.72rem",
-                    fontWeight: 800,
+                    ...smallButtonSx,
+                    borderColor: "#E4E4DE",
+                    color: "#444",
                     "&:hover": {
                       borderColor: GOLD,
                       bgcolor: "#FFFBEA",
                     },
+                    "& .MuiButton-startIcon svg": { fontSize: 16 },
                   }}
                 >
                   Tracking
                 </Button>
               )}
+
               <Button
                 fullWidth
                 size="small"
                 variant="outlined"
                 color="error"
-                startIcon={
-                  <DeleteOutlineRounded
-                    sx={{
-                      fontSize: 17,
-                    }}
-                  />
-                }
+                startIcon={<DeleteOutlineRounded />}
                 onClick={(event) => {
                   event.stopPropagation();
-
-                  onDelete({
-                    id,
-                    orderNumber,
-                  });
+                  onDelete({ id, orderNumber });
                 }}
                 sx={{
-                  minHeight: 36,
-                  borderRadius: 2,
+                  ...smallButtonSx,
                   borderColor: "#F0C8C5",
                   color: "#B3261E",
-                  textTransform: "none",
-                  fontSize: "0.72rem",
-                  fontWeight: 800,
                   "&:hover": {
                     borderColor: "#B3261E",
                     bgcolor: "#FDEDEC",
                   },
+                  "& .MuiButton-startIcon svg": { fontSize: 16 },
                 }}
               >
                 Delete Order
@@ -1021,71 +875,17 @@ const OrderCard = ({ order, index, onOpen, onDelete }) => {
   );
 };
 
-const InfoBox = ({ label, value, chip }) => {
-  return (
-    <Box
-      sx={{
-        minWidth: 0,
-        p: {
-          xs: 0.9,
-          sm: 1,
-        },
-        borderRadius: 2,
-        bgcolor: "#FAFAFA",
-        border: "1px solid #F0F0F0",
-      }}
-    >
-      <Typography
-        sx={{
-          color: "#999",
-          fontSize: "0.58rem",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: ".04em",
-        }}
-      >
-        {label}
-      </Typography>
-
-      <Typography
-        sx={{
-          mt: 0.3,
-          color: "#333",
-          fontSize: {
-            xs: "0.66rem",
-            sm: "0.7rem",
-          },
-          fontWeight: 800,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {value || "—"}
-      </Typography>
-
-      {chip}
-    </Box>
-  );
-};
-
 const Orders = () => {
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-
   const [dateFilter, setDateFilter] = useState("all");
-
   const [deleteTarget, setDeleteTarget] = useState(null);
-
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-
   const [deleting, setDeleting] = useState(false);
-
   const [success, setSuccess] = useState("");
-
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -1100,28 +900,17 @@ const Orders = () => {
 
       setError("");
 
-      const params = {
-        limit: 100,
-      };
-
+      const params = { limit: 100 };
       const range = getDateRange(dateFilter);
 
-      if (range.from) {
-        params.dateFrom = range.from;
-      }
-
-      if (range.to) {
-        params.dateTo = range.to;
-      }
+      if (range.from) params.dateFrom = range.from;
+      if (range.to) params.dateTo = range.to;
 
       if (statusFilter && statusFilter !== "All") {
         params.status = statusFilter;
       }
 
-      const response = await api.get("/api/admin/orders", {
-        params,
-      });
-
+      const response = await api.get("/api/admin/orders", { params });
       setOrders(getOrdersFromResponse(response?.data));
     } catch (err) {
       setError(
@@ -1151,7 +940,6 @@ const Orders = () => {
       );
 
       setSuccess(`${deleteTarget.orderNumber} deleted successfully.`);
-
       setDeleteTarget(null);
     } catch (err) {
       setError(
@@ -1171,17 +959,12 @@ const Orders = () => {
       setSuccess("");
 
       const response = await api.delete("/api/admin/orders");
-
       const deletedCount = response?.data?.deletedCount || 0;
 
       setOrders([]);
-
       setSuccess(
-        `${deletedCount} order${
-          deletedCount === 1 ? "" : "s"
-        } deleted successfully.`,
+        `${deletedCount} order${deletedCount === 1 ? "" : "s"} deleted successfully.`,
       );
-
       setDeleteAllOpen(false);
     } catch (err) {
       setError(
@@ -1212,25 +995,25 @@ const Orders = () => {
         (item) => item.toLowerCase() === String(status).toLowerCase(),
       );
 
-      if (matched) {
-        counts[matched] += 1;
-      }
+      if (matched) counts[matched] += 1;
     });
 
     counts.All = orders.length;
-
     return counts;
   }, [orders]);
 
-  const totalRevenue = useMemo(() => {
-    return orders.reduce((sum, order) => sum + getOrderAmount(order), 0);
-  }, [orders]);
+  const totalRevenue = useMemo(
+    () => orders.reduce((sum, order) => sum + getOrderAmount(order), 0),
+    [orders],
+  );
 
-  const paidOrders = useMemo(() => {
-    return orders.filter(
-      (order) => getPaymentStatus(order).toLowerCase() === "captured",
-    ).length;
-  }, [orders]);
+  const paidOrders = useMemo(
+    () =>
+      orders.filter(
+        (order) => getPaymentStatus(order).toLowerCase() === "captured",
+      ).length,
+    [orders],
+  );
 
   const filteredOrders = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -1245,14 +1028,10 @@ const Orders = () => {
         return false;
       }
 
-      if (!query) {
-        return true;
-      }
+      if (!query) return true;
 
       const customerName = getCustomerName(order).toLowerCase();
-
       const customerEmail = getCustomerEmail(order).toLowerCase();
-
       const customerMobile = getCustomerMobile(order).toLowerCase();
 
       const orderNumber = String(
@@ -1275,131 +1054,188 @@ const Orders = () => {
     <Box
       sx={{
         width: "100%",
-        pb: {
-          xs: 2,
-          sm: 3,
-          md: 5,
-        },
+        maxWidth: "100%",
+        minWidth: 0,
+        pb: { xs: 2, sm: 3, md: 4 },
+        overflowX: "clip",
+        color: DARK,
       }}
     >
       {/* HEADER */}
-      <Stack
-        direction={{
-          xs: "column",
-          sm: "row",
-        }}
-        justifyContent="space-between"
-        alignItems={{
-          xs: "stretch",
-          sm: "center",
-        }}
-        spacing={1.5}
+      <MotionBox
+        initial={{ opacity: 0, y: -9 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
         sx={{
-          mb: {
-            xs: 1.5,
-            sm: 2.5,
-          },
+          position: "relative",
+          overflow: "hidden",
+          mb: { xs: 1.3, sm: 1.8 },
+          p: { xs: 1.4, sm: 2, md: 2.5 },
+          borderRadius: "9px",
+          color: "#FFFFFF",
+          background:
+            "linear-gradient(125deg,#171717 0%,#25251F 75%,#40340B 100%)",
         }}
       >
-        <Box>
-          <Typography
-            sx={{
-              color: DARK,
-              fontWeight: 950,
-              letterSpacing: "-.04em",
-              fontSize: {
-                xs: "1.45rem",
-                sm: "1.85rem",
-                md: "2.1rem",
-              },
-              lineHeight: 1,
-            }}
-          >
-            Orders
-          </Typography>
+        <Box
+          sx={{
+            position: "absolute",
+            width: { xs: 115, sm: 180 },
+            height: { xs: 115, sm: 180 },
+            borderRadius: "50%",
+            right: { xs: -45, sm: -55 },
+            top: { xs: -55, sm: -95 },
+            bgcolor: "rgba(255,208,0,.09)",
+            pointerEvents: "none",
+          }}
+        />
 
-          <Typography
-            sx={{
-              mt: 0.55,
-              color: MUTED,
-              fontSize: {
-                xs: "0.7rem",
-                sm: "0.82rem",
-              },
-            }}
-          >
-            Manage orders, customers, payments and shipments.
-          </Typography>
-        </Box>
-
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={
-            refreshing ? (
-              <CircularProgress size={15} />
-            ) : (
-              <RefreshRounded
-                sx={{
-                  fontSize: 18,
-                }}
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          spacing={1}
+          sx={{ position: "relative", zIndex: 1 }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.6}
+              sx={{ mb: 0.5 }}
+            >
+              <ReceiptLongRounded
+                sx={{ color: GOLD, fontSize: { xs: 15, sm: 18 } }}
               />
-            )
-          }
-          disabled={refreshing}
-          onClick={() => fetchOrders(false)}
-          sx={{
-            alignSelf: {
-              xs: "flex-start",
-              sm: "auto",
-            },
-            minHeight: 36,
-            px: 1.5,
-            borderRadius: 2,
-            borderColor: "#E1E1E1",
-            color: "#444",
-            textTransform: "none",
-            fontSize: "0.72rem",
-            fontWeight: 800,
-            "&:hover": {
-              borderColor: GOLD,
-              bgcolor: "#FFFBEA",
-            },
-          }}
-        >
-          Refresh
-        </Button>
-      </Stack>
+              <Typography
+                sx={{
+                  color: GOLD,
+                  fontSize: { xs: "0.56rem", sm: "0.65rem" },
+                  fontWeight: 850,
+                  letterSpacing: "1px",
+                }}
+              >
+                GLYRUS ADMIN
+              </Typography>
+            </Stack>
 
-      {/* ERROR */}
-      {error && (
-        <Alert
-          severity="error"
-          onClose={() => setError("")}
-          sx={{
-            mb: 1.5,
-            borderRadius: 2.5,
-            fontSize: "0.75rem",
-            py: 0.3,
-          }}
-        >
-          {error}
-        </Alert>
-      )}
+            <Typography
+              sx={{
+                fontSize: { xs: "1.35rem", sm: "1.85rem", md: "2.1rem" },
+                fontWeight: 950,
+                letterSpacing: "-.055em",
+                lineHeight: 1.1,
+              }}
+            >
+              Orders
+            </Typography>
+
+            <Typography
+              sx={{
+                mt: 0.6,
+                color: "#BEBEB7",
+                fontSize: { xs: "0.63rem", sm: "0.77rem" },
+                lineHeight: 1.5,
+              }}
+            >
+              Manage orders, customers, payments and shipments.
+            </Typography>
+          </Box>
+
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={
+              refreshing ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                <RefreshRounded />
+              )
+            }
+            disabled={refreshing}
+            onClick={() => fetchOrders(false)}
+            sx={{
+              flexShrink: 0,
+              minWidth: 0,
+              minHeight: { xs: 33, sm: 38 },
+              px: { xs: 0.9, sm: 1.4 },
+              borderRadius: "6px",
+              bgcolor: GOLD,
+              color: DARK,
+              fontSize: { xs: "0.63rem", sm: "0.73rem" },
+              fontWeight: 850,
+              textTransform: "none",
+              "& .MuiButton-startIcon": {
+                mr: { xs: 0.4, sm: 0.7 },
+                "& svg": { fontSize: { xs: 16, sm: 18 } },
+              },
+              "&:hover": { bgcolor: "#F0C400" },
+            }}
+          >
+            Refresh
+          </Button>
+        </Stack>
+      </MotionBox>
+
+      {/* NOTIFICATIONS */}
+      <AnimatePresence>
+        {error && (
+          <MotionBox
+            key="error"
+            initial={{ opacity: 0, height: 0, y: -4 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0 }}
+            sx={{ overflow: "hidden" }}
+          >
+            <Alert
+              severity="error"
+              onClose={() => setError("")}
+              sx={{
+                mb: 1.2,
+                borderRadius: "7px",
+                fontSize: "0.73rem",
+                "& .MuiAlert-message": { py: 0.4 },
+              }}
+            >
+              {error}
+            </Alert>
+          </MotionBox>
+        )}
+
+        {success && (
+          <MotionBox
+            key="success"
+            initial={{ opacity: 0, height: 0, y: -4 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0 }}
+            sx={{ overflow: "hidden" }}
+          >
+            <Alert
+              severity="success"
+              onClose={() => setSuccess("")}
+              sx={{
+                mb: 1.2,
+                borderRadius: "7px",
+                fontSize: "0.73rem",
+                "& .MuiAlert-message": { py: 0.4 },
+              }}
+            >
+              {success}
+            </Alert>
+          </MotionBox>
+        )}
+      </AnimatePresence>
 
       {/* OVERVIEW STATS */}
       <Box
         sx={{
           display: "grid",
           gridTemplateColumns: {
-            xs: "repeat(2, minmax(0, 1fr))",
-            sm: "repeat(4, minmax(0, 1fr))",
+            xs: "repeat(2,minmax(0,1fr))",
+            sm: "repeat(4,minmax(0,1fr))",
           },
-          gap: {
-            xs: 0.75,
-            sm: 1,
-          },
-          mb: 1.5,
+          gap: { xs: 0.7, sm: 1 },
+          mb: 1.2,
         }}
       >
         <StatCard
@@ -1439,41 +1275,27 @@ const Orders = () => {
       <Card
         elevation={0}
         sx={{
-          mb: 1.5,
-          borderRadius: 2.5,
-          border: "1px solid #ECECEC",
-          bgcolor: "#FFF",
+          ...surfaceSx,
+          mb: 1.2,
         }}
       >
         <CardContent
           sx={{
-            p: {
-              xs: 1.1,
-              sm: 1.4,
-            },
-            "&:last-child": {
-              pb: {
-                xs: 1.1,
-                sm: 1.4,
-              },
-            },
+            p: { xs: 1, sm: 1.4 },
+            "&:last-child": { pb: { xs: 1, sm: 1.4 } },
           }}
         >
           <Stack
             direction="row"
+            alignItems="center"
+            spacing={{ xs: 1.2, sm: 2.5 }}
             divider={<Divider orientation="vertical" flexItem />}
-            spacing={{
-              xs: 1.5,
-              sm: 3,
-            }}
           >
             <SummaryMetric
               label="Revenue"
               value={formatCurrency(totalRevenue)}
             />
-
             <SummaryMetric label="Paid Orders" value={paidOrders} />
-
             <SummaryMetric label="Showing" value={filteredOrders.length} />
           </Stack>
         </CardContent>
@@ -1483,14 +1305,12 @@ const Orders = () => {
       <Box
         sx={{
           display: "flex",
-          gap: 0.75,
+          gap: 0.65,
           overflowX: "auto",
           pb: 0.5,
-          mb: 1.5,
+          mb: 1.2,
           scrollbarWidth: "none",
-          "&::-webkit-scrollbar": {
-            display: "none",
-          },
+          "&::-webkit-scrollbar": { display: "none" },
         }}
       >
         {QUICK_STATUSES.map((item) => {
@@ -1501,29 +1321,27 @@ const Orders = () => {
               key={item.label}
               size="small"
               startIcon={React.cloneElement(item.icon, {
-                sx: {
-                  fontSize: 16,
-                },
+                sx: { fontSize: 15 },
               })}
               onClick={() => setStatusFilter(item.label)}
               sx={{
                 flexShrink: 0,
                 minWidth: "auto",
-                minHeight: 32,
-                px: 1.1,
-                borderRadius: 2,
-                border: selected ? `1px solid ${GOLD}` : "1px solid #E7E7E7",
-                bgcolor: selected ? "#FFFBEA" : "#FFF",
+                minHeight: 31,
+                px: { xs: 0.85, sm: 1.1 },
+                borderRadius: "6px",
+                border: `1px solid ${selected ? "#D8BB25" : "#E8E8E2"}`,
+                bgcolor: selected ? "#FFF8D8" : "#FFFFFF",
                 color: selected ? "#765B00" : "#666",
-                textTransform: "none",
-                fontSize: {
-                  xs: "0.65rem",
-                  sm: "0.7rem",
-                },
+                fontSize: { xs: "0.62rem", sm: "0.69rem" },
                 fontWeight: 800,
+                textTransform: "none",
+                "& .MuiButton-startIcon": {
+                  mr: 0.45,
+                },
                 "&:hover": {
-                  bgcolor: "#FFFBEA",
-                  borderColor: GOLD,
+                  bgcolor: "#FFF8D8",
+                  borderColor: "#D8BB25",
                 },
               }}
             >
@@ -1531,8 +1349,8 @@ const Orders = () => {
               <Box
                 component="span"
                 sx={{
-                  ml: 0.25,
-                  color: selected ? "#9A7600" : "#999",
+                  ml: 0.55,
+                  color: selected ? GOLD_DARK : "#999",
                 }}
               >
                 {statusCounts[item.label] || 0}
@@ -1546,31 +1364,20 @@ const Orders = () => {
       <Card
         elevation={0}
         sx={{
-          mb: 1.5,
-          borderRadius: 2.5,
-          border: "1px solid #ECECEC",
+          ...surfaceSx,
+          mb: 1.3,
         }}
       >
         <CardContent
           sx={{
-            p: {
-              xs: 1,
-              sm: 1.25,
-            },
-            "&:last-child": {
-              pb: {
-                xs: 1,
-                sm: 1.25,
-              },
-            },
+            p: { xs: 0.9, sm: 1.3 },
+            "&:last-child": { pb: { xs: 0.9, sm: 1.3 } },
           }}
         >
           <Stack
-            direction={{
-              xs: "column",
-              sm: "row",
-            }}
+            direction={{ xs: "column", sm: "row" }}
             spacing={0.8}
+            alignItems="stretch"
           >
             <TextField
               fullWidth
@@ -1578,199 +1385,197 @@ const Orders = () => {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search order, customer or tracking..."
+              inputProps={{ "aria-label": "Search orders" }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchRounded
-                      sx={{
-                        color: "#999",
-                        fontSize: 19,
-                      }}
-                    />
+                    <SearchRounded sx={{ color: "#999", fontSize: 19 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: search && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      aria-label="Clear search"
+                      onClick={() => setSearch("")}
+                    >
+                      <CloseRounded sx={{ fontSize: 16 }} />
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
               sx={{
+                flex: 1,
+                minWidth: 0,
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  minHeight: 38,
-                  fontSize: {
-                    xs: "0.7rem",
-                    sm: "0.75rem",
-                  },
-                  bgcolor: "#FAFAFA",
+                  borderRadius: "6px",
+                  minHeight: 37,
+                  bgcolor: "#FAFAF8",
+                  fontSize: { xs: "0.69rem", sm: "0.75rem" },
+                  "& fieldset": { borderColor: "#E9E9E3" },
+                  "&:hover fieldset": { borderColor: "#D5BE52" },
+                  "&.Mui-focused fieldset": { borderColor: "#D5B500" },
                 },
+                "& .MuiInputBase-input": { py: 1 },
               }}
             />
 
-            <TextField
-              select
-              size="small"
-              label="Status"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              sx={{
-                width: {
-                  xs: "100%",
-                  sm: 190,
-                },
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  minHeight: 38,
-                  fontSize: "0.72rem",
-                },
-              }}
+            <Stack
+              direction="row"
+              spacing={0.7}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
             >
-              {ORDER_STATUSES.map((status) => (
-                <MenuItem
-                  key={status}
-                  value={status}
-                  sx={{
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  {status} (
-                  {status === "All" ? orders.length : statusCounts[status] || 0}
-                  )
-                </MenuItem>
-              ))}
-            </TextField>
+              <TextField
+                select
+                size="small"
+                label="Status"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  width: { sm: 150 },
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "6px",
+                    minHeight: 37,
+                    fontSize: "0.7rem",
+                  },
+                  "& .MuiInputLabel-root": { fontSize: "0.75rem" },
+                }}
+              >
+                {ORDER_STATUSES.map((status) => (
+                  <MenuItem
+                    key={status}
+                    value={status}
+                    sx={{ fontSize: "0.75rem" }}
+                  >
+                    {status} (
+                    {status === "All"
+                      ? orders.length
+                      : statusCounts[status] || 0}
+                    )
+                  </MenuItem>
+                ))}
+              </TextField>
 
-            <TextField
-              select
-              size="small"
-              label="Date"
-              value={dateFilter}
-              onChange={(event) => setDateFilter(event.target.value)}
-              sx={{
-                width: {
-                  xs: "100%",
-                  sm: 180,
-                },
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  minHeight: 38,
-                  fontSize: "0.72rem",
-                },
-              }}
-            >
-              {DATE_FILTERS.map((item) => (
-                <MenuItem
-                  key={item.value}
-                  value={item.value}
-                  sx={{
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  {item.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              startIcon={
-                <DeleteSweepRounded
-                  sx={{
-                    fontSize: 18,
-                  }}
-                />
-              }
-              disabled={deleting || orders.length === 0}
-              onClick={() => setDeleteAllOpen(true)}
-              sx={{
-                minHeight: 36,
-                px: 1.5,
-                borderRadius: 2,
-                borderColor: "#F0C8C5",
-                color: "#B3261E",
-                textTransform: "none",
-                fontSize: "0.62rem",
-                fontWeight: 500,
-                "&:hover": {
-                  borderColor: "#B3261E",
-                  bgcolor: "#FDEDEC",
-                },
-              }}
-            >
-              Delete All
-            </Button>
+              <TextField
+                select
+                size="small"
+                label="Date"
+                value={dateFilter}
+                onChange={(event) => setDateFilter(event.target.value)}
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  width: { sm: 135 },
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "6px",
+                    minHeight: 37,
+                    fontSize: "0.7rem",
+                  },
+                  "& .MuiInputLabel-root": { fontSize: "0.75rem" },
+                }}
+              >
+                {DATE_FILTERS.map((item) => (
+                  <MenuItem
+                    key={item.value}
+                    value={item.value}
+                    sx={{ fontSize: "0.75rem" }}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<DeleteSweepRounded />}
+                disabled={deleting || orders.length === 0}
+                onClick={() => setDeleteAllOpen(true)}
+                sx={{
+                  flexShrink: 0,
+                  minWidth: 0,
+                  minHeight: 37,
+                  px: { xs: 0.75, sm: 1.1 },
+                  borderRadius: "6px",
+                  borderColor: "#F0C8C5",
+                  color: "#B3261E",
+                  fontSize: { xs: "0.58rem", sm: "0.65rem" },
+                  fontWeight: 800,
+                  textTransform: "none",
+                  "& .MuiButton-startIcon": {
+                    mr: 0.4,
+                    "& svg": { fontSize: 17 },
+                  },
+                  "&:hover": {
+                    borderColor: "#B3261E",
+                    bgcolor: "#FDEDEC",
+                  },
+                }}
+              >
+                Delete All
+              </Button>
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
 
-      {/* LOADING */}
+      {/* ORDER RESULTS */}
       {loading ? (
         <Box
           sx={{
-            minHeight: 280,
+            minHeight: 230,
             display: "grid",
             placeItems: "center",
           }}
         >
           <Stack alignItems="center" spacing={1}>
-            <CircularProgress
-              size={30}
-              thickness={4}
-              sx={{
-                color: GOLD,
-              }}
-            />
-
-            <Typography
-              sx={{
-                color: "#999",
-                fontSize: "0.7rem",
-              }}
-            >
+            <CircularProgress size={29} thickness={4} sx={{ color: GOLD }} />
+            <Typography sx={{ color: "#999", fontSize: "0.7rem" }}>
               Loading orders...
             </Typography>
           </Stack>
         </Box>
       ) : filteredOrders.length === 0 ? (
-        /* EMPTY */
-        <Card
+        <MotionCard
           elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: "1px solid #ECECEC",
-          }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          sx={surfaceSx}
         >
           <CardContent
             sx={{
-              minHeight: 260,
+              minHeight: 220,
               display: "grid",
               placeItems: "center",
               textAlign: "center",
+              px: 2,
             }}
           >
             <Box>
               <Box
                 sx={{
-                  width: 54,
-                  height: 54,
+                  width: 48,
+                  height: 48,
                   mx: "auto",
-                  mb: 1.3,
-                  borderRadius: 2.5,
+                  mb: 1.2,
+                  borderRadius: "9px",
                   display: "grid",
                   placeItems: "center",
-                  bgcolor: "#FFF8D9",
+                  bgcolor: "#FFF6D2",
                   color: GOLD_DARK,
                 }}
               >
-                <ShoppingBagRounded
-                  sx={{
-                    fontSize: 27,
-                  }}
-                />
+                <Inventory2Rounded sx={{ fontSize: 25 }} />
               </Box>
 
               <Typography
                 sx={{
                   color: DARK,
                   fontWeight: 900,
-                  fontSize: "0.9rem",
+                  fontSize: "0.88rem",
                 }}
               >
                 No orders found
@@ -1778,33 +1583,47 @@ const Orders = () => {
 
               <Typography
                 sx={{
-                  mt: 0.4,
+                  mt: 0.45,
                   color: "#999",
                   fontSize: "0.68rem",
                 }}
               >
                 Try changing your search or status filter.
               </Typography>
+
+              {(search || statusFilter !== "All") && (
+                <Button
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("All");
+                  }}
+                  sx={{
+                    mt: 0.8,
+                    color: GOLD_DARK,
+                    fontSize: "0.72rem",
+                    fontWeight: 800,
+                    textTransform: "none",
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
             </Box>
           </CardContent>
-        </Card>
+        </MotionCard>
       ) : (
-        /* ORDERS */
-        <Stack
-          spacing={{
-            xs: 0.8,
-            sm: 1,
-          }}
-        >
-          {filteredOrders.map((order, index) => (
-            <OrderCard
-              key={getOrderId(order) || index}
-              order={order}
-              index={index}
-              onOpen={(id) => navigate(`/admin/orders/${id}`)}
-              onDelete={(orderToDelete) => setDeleteTarget(orderToDelete)}
-            />
-          ))}
+        <Stack spacing={{ xs: 0.75, sm: 0.95 }}>
+          <AnimatePresence mode="popLayout">
+            {filteredOrders.map((order, index) => (
+              <OrderCard
+                key={getOrderId(order) || index}
+                order={order}
+                index={index}
+                onOpen={(id) => navigate(`/admin/orders/${id}`)}
+                onDelete={(orderToDelete) => setDeleteTarget(orderToDelete)}
+              />
+            ))}
+          </AnimatePresence>
         </Stack>
       )}
 
@@ -1812,47 +1631,45 @@ const Orders = () => {
       <Dialog
         open={Boolean(deleteTarget)}
         onClose={() => {
-          if (!deleting) {
-            setDeleteTarget(null);
-          }
+          if (!deleting) setDeleteTarget(null);
         }}
         maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "10px",
+            m: 2,
+          },
+        }}
       >
         <DialogTitle
           sx={{
             fontWeight: 900,
             fontSize: "1rem",
+            pb: 1,
           }}
         >
           Delete Order?
         </DialogTitle>
 
         <DialogContent>
-          <DialogContentText
-            sx={{
-              fontSize: "0.8rem",
-              color: "#666",
-            }}
-          >
+          <DialogContentText sx={{ fontSize: "0.8rem", color: "#666" }}>
             Are you sure you want to permanently delete{" "}
-            <strong>{deleteTarget?.orderNumber}</strong>? This action cannot be
-            undone.
+            <Box component="span" sx={{ fontWeight: 900, color: DARK }}>
+              {deleteTarget?.orderNumber}
+            </Box>
+            ? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
 
-        <DialogActions
-          sx={{
-            px: 2,
-            pb: 2,
-          }}
-        >
+        <DialogActions sx={{ px: 2, pb: 2, gap: 0.5 }}>
           <Button
             onClick={() => setDeleteTarget(null)}
             disabled={deleting}
             sx={{
               textTransform: "none",
               fontWeight: 800,
+              color: "#666",
             }}
           >
             Cancel
@@ -1872,8 +1689,9 @@ const Orders = () => {
             }
             sx={{
               textTransform: "none",
-              fontWeight: 800,
-              borderRadius: 2,
+              fontWeight: 850,
+              borderRadius: "6px",
+              boxShadow: "none",
             }}
           >
             {deleting ? "Deleting..." : "Delete Order"}
@@ -1885,18 +1703,23 @@ const Orders = () => {
       <Dialog
         open={deleteAllOpen}
         onClose={() => {
-          if (!deleting) {
-            setDeleteAllOpen(false);
-          }
+          if (!deleting) setDeleteAllOpen(false);
         }}
         maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "10px",
+            m: 2,
+          },
+        }}
       >
         <DialogTitle
           sx={{
             fontWeight: 900,
             fontSize: "1rem",
             color: "#B3261E",
+            pb: 1,
           }}
         >
           Delete All Orders?
@@ -1907,28 +1730,27 @@ const Orders = () => {
             sx={{
               fontSize: "0.8rem",
               color: "#666",
+              lineHeight: 1.7,
             }}
           >
-            This will permanently delete <strong>all orders</strong> from the
-            database.
-            <br />
+            This will permanently delete{" "}
+            <Box component="span" sx={{ fontWeight: 900, color: DARK }}>
+              all orders
+            </Box>{" "}
+            from the database.
             <br />
             This action cannot be undone.
           </DialogContentText>
         </DialogContent>
 
-        <DialogActions
-          sx={{
-            px: 2,
-            pb: 2,
-          }}
-        >
+        <DialogActions sx={{ px: 2, pb: 2, gap: 0.5 }}>
           <Button
             onClick={() => setDeleteAllOpen(false)}
             disabled={deleting}
             sx={{
               textTransform: "none",
               fontWeight: 800,
+              color: "#666",
             }}
           >
             Cancel
@@ -1948,8 +1770,9 @@ const Orders = () => {
             }
             sx={{
               textTransform: "none",
-              fontWeight: 500,
-              borderRadius: 2,
+              fontWeight: 850,
+              borderRadius: "6px",
+              boxShadow: "none",
             }}
           >
             {deleting ? "Deleting..." : "Delete All"}
@@ -1959,44 +1782,5 @@ const Orders = () => {
     </Box>
   );
 };
-
-const SummaryMetric = ({ label, value }) => (
-  <Box
-    sx={{
-      minWidth: 0,
-      flex: 1,
-    }}
-  >
-    <Typography
-      sx={{
-        color: "#999",
-        fontSize: {
-          xs: "0.57rem",
-          sm: "0.62rem",
-        },
-        fontWeight: 700,
-      }}
-    >
-      {label}
-    </Typography>
-
-    <Typography
-      sx={{
-        mt: 0.15,
-        color: DARK,
-        fontSize: {
-          xs: "0.78rem",
-          sm: "0.88rem",
-        },
-        fontWeight: 900,
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {value}
-    </Typography>
-  </Box>
-);
 
 export default Orders;
