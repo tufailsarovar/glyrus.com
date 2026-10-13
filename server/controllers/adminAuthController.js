@@ -285,6 +285,12 @@ export const googleAdminCallback = async (req, res) => {
 
     const expectedState = req.cookies?.googleAdminState;
 
+    console.log("Google OAuth state check:", {
+      hasQueryState: Boolean(state),
+      hasStateCookie: Boolean(expectedState),
+      nodeEnv: process.env.NODE_ENV,
+    });
+
     res.clearCookie("googleAdminState", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
