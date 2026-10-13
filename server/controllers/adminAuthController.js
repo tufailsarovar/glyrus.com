@@ -2,9 +2,9 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { sendAdminLoginOtpEmail } from "../services/emailService.js";
 
+// NOTE: In-memory OTP storage is temporary and may not persist between
+// serverless invocations. Use Redis or a database for reliable OTP storage.
 const otpStore = new Map();
-
-const googleLoginTickets = new Map();
 
 const normalizeEmail = (email) =>
   String(email || "")
@@ -14,6 +14,9 @@ const normalizeEmail = (email) =>
 const getAdminEmail = () => normalizeEmail(process.env.ADMIN_EMAIL);
 
 const getJwtSecret = () => String(process.env.ADMIN_JWT_SECRET || "");
+
+const getGoogleStateSecret = () =>
+  String(process.env.GOOGLE_STATE_SECRET || getJwtSecret());
 
 const createAdminToken = (email) =>
   jwt.sign(
@@ -38,6 +41,49 @@ const setAdminCookie = (res, token) => {
   });
 };
 
+const getClientUrl = () =>
+  String(process.env.CLIENT_URL || "http://localhost:5173")
+    .split(",")[0]
+    .trim()
+    .replace(/\/+$/, "");
+
+const createGoogleState = (nonce) =>
+  jwt.sign(
+    {
+      type: "google-oauth-state",
+      nonce,
+    },
+    getGoogleStateSecret(),
+    { expiresIn: "5m" },
+  );
+
+const verifyGoogleState = (state) => {
+  const decoded = jwt.verify(state, getGoogleStateSecret());
+
+  if (
+    decoded.type !== "google-oauth-state" ||
+    typeof decoded.nonce !== "string" ||
+    !/^[a-f0-9]{64}$/i.test(decoded.nonce)
+  ) {
+    throw new Error("Invalid Google OAuth state.");
+  }
+
+  return decoded;
+};
+
+const createGoogleLoginTicket = (email, nonce) =>
+  jwt.sign(
+    {
+      type: "google-admin-ticket",
+      email,
+      nonce,
+    },
+    getGoogleStateSecret(),
+    { expiresIn: "60s" },
+  );
+
+// ================= ADMIN EMAIL OTP LOGIN =================
+
 export const adminLogin = async (req, res, next) => {
   try {
     return res.status(400).json({
@@ -61,14 +107,13 @@ export const requestAdminOtp = async (req, res, next) => {
       });
     }
 
-    if (!adminEmail || !process.env.ADMIN_JWT_SECRET) {
+    if (!adminEmail || !getJwtSecret()) {
       return res.status(500).json({
         success: false,
         message: "Admin authentication is not configured.",
       });
     }
 
-    // Only the configured admin email can receive an OTP.
     if (email !== adminEmail) {
       return res.status(403).json({
         success: false,
@@ -136,6 +181,7 @@ export const verifyAdminOtp = async (req, res, next) => {
 
     if (!record || record.expiresAt < Date.now()) {
       otpStore.delete(email);
+
       return res.status(400).json({
         success: false,
         message: "OTP expired. Please request a new one.",
@@ -144,6 +190,7 @@ export const verifyAdminOtp = async (req, res, next) => {
 
     if (record.attempts >= 5) {
       otpStore.delete(email);
+
       return res.status(429).json({
         success: false,
         message: "Too many incorrect attempts. Request a new OTP.",
@@ -154,12 +201,12 @@ export const verifyAdminOtp = async (req, res, next) => {
 
     const submittedHash = crypto.createHash("sha256").update(otp).digest("hex");
 
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(record.otpHash, "hex"),
-        Buffer.from(submittedHash, "hex"),
-      )
-    ) {
+    const hashesMatch = crypto.timingSafeEqual(
+      Buffer.from(record.otpHash, "hex"),
+      Buffer.from(submittedHash, "hex"),
+    );
+
+    if (!hashesMatch) {
       return res.status(401).json({
         success: false,
         message: "Incorrect OTP. Please try again.",
@@ -223,30 +270,30 @@ export const getAdminProfile = async (req, res, next) => {
 
 // ================= GOOGLE ADMIN LOGIN =================
 
-const generateGoogleState = () => crypto.randomBytes(32).toString("hex");
+// Step 1: Frontend requests the Google authorization URL.
+// The frontend must send a cryptographically random 64-character nonce.
 
 export const googleAdminLogin = async (req, res, next) => {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+    const nonce = String(req.query?.nonce || "");
 
-    if (!clientId || !callbackUrl) {
+    if (!clientId || !callbackUrl || !getGoogleStateSecret()) {
       return res.status(503).json({
         success: false,
         message: "Google login is not configured.",
       });
     }
 
-    const state = generateGoogleState();
-    const isProduction = process.env.NODE_ENV === "production";
+    if (!/^[a-f0-9]{64}$/i.test(nonce)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Google login request. Please try again.",
+      });
+    }
 
-    res.cookie("googleAdminState", state, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 5 * 60 * 1000,
-      path: "/",
-    });
+    const state = createGoogleState(nonce);
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -266,10 +313,11 @@ export const googleAdminLogin = async (req, res, next) => {
   }
 };
 
+// Step 2: Google redirects back to the backend callback.
+// State is verified cryptographically; no state cookie is required.
+
 export const googleAdminCallback = async (req, res) => {
-  const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173")
-    .split(",")[0]
-    .trim();
+  const clientUrl = getClientUrl();
 
   const failLogin = (message) =>
     res.redirect(
@@ -279,30 +327,15 @@ export const googleAdminCallback = async (req, res) => {
   try {
     const { code, state, error } = req.query;
 
-    if (error || !code || !state) {
+    if (error || !code || !state || typeof state !== "string") {
       return failLogin("Google sign-in was cancelled or failed.");
     }
 
-    const expectedState = req.cookies?.googleAdminState;
+    let decodedState;
 
-    console.log("Google OAuth state check:", {
-      hasQueryState: Boolean(state),
-      hasStateCookie: Boolean(expectedState),
-      nodeEnv: process.env.NODE_ENV,
-    });
-
-    res.clearCookie("googleAdminState", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/api/admin/auth",
-    });
-
-    if (
-      !expectedState ||
-      typeof state !== "string" ||
-      !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(expectedState))
-    ) {
+    try {
+      decodedState = verifyGoogleState(state);
+    } catch {
       return failLogin("Invalid login session. Please try again.");
     }
 
@@ -311,7 +344,6 @@ export const googleAdminCallback = async (req, res) => {
       GOOGLE_CLIENT_SECRET: clientSecret,
       GOOGLE_CALLBACK_URL: callbackUrl,
       ADMIN_EMAIL,
-      ADMIN_JWT_SECRET,
     } = process.env;
 
     if (
@@ -319,7 +351,7 @@ export const googleAdminCallback = async (req, res) => {
       !clientSecret ||
       !callbackUrl ||
       !ADMIN_EMAIL ||
-      !ADMIN_JWT_SECRET
+      !getJwtSecret()
     ) {
       return failLogin("Google admin authentication is not configured.");
     }
@@ -371,17 +403,11 @@ export const googleAdminCallback = async (req, res) => {
       );
     }
 
-    const token = createAdminToken(email);
-    const ticket = crypto.randomBytes(32).toString("hex");
-
-    googleLoginTickets.set(ticket, {
-      token,
-      email,
-      expiresAt: Date.now() + 60 * 1000,
-    });
+    // Signed, short-lived ticket works across serverless instances.
+    const ticket = createGoogleLoginTicket(email, decodedState.nonce);
 
     return res.redirect(
-      `${clientUrl}/admin/login?google_ticket=${encodeURIComponent(ticket)}`,
+      `${clientUrl}/admin/login?google_ticket=${encodeURIComponent(ticket)}&google_nonce=${encodeURIComponent(decodedState.nonce)}`,
     );
   } catch (error) {
     console.error("Google admin login error:", error.message);
@@ -389,26 +415,69 @@ export const googleAdminCallback = async (req, res) => {
   }
 };
 
+// Step 3: Frontend exchanges the ticket for the admin JWT.
+
 export const exchangeGoogleLoginTicket = (req, res) => {
   const ticket = String(req.body?.ticket || "");
-  const record = googleLoginTickets.get(ticket);
+  const nonce = String(req.body?.nonce || "");
 
-  if (!record || record.expiresAt < Date.now()) {
-    googleLoginTickets.delete(ticket);
+  if (!ticket || !nonce || !/^[a-f0-9]{64}$/i.test(nonce)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid Google login session. Please try again.",
+    });
+  }
 
+  let decoded;
+
+  try {
+    decoded = jwt.verify(ticket, getGoogleStateSecret());
+  } catch {
     return res.status(401).json({
       success: false,
       message: "Google login session expired. Please try again.",
     });
   }
 
-  googleLoginTickets.delete(ticket);
+  if (
+    decoded.type !== "google-admin-ticket" ||
+    !decoded.email ||
+    !decoded.nonce ||
+    decoded.nonce !== nonce
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid Google login session. Please try again.",
+    });
+  }
+
+  const email = normalizeEmail(decoded.email);
+  const adminEmail = getAdminEmail();
+
+  if (!adminEmail || email !== adminEmail) {
+    return res.status(403).json({
+      success: false,
+      message:
+        "Access denied. This Google account is not registered as an admin.",
+    });
+  }
+
+  if (!getJwtSecret()) {
+    return res.status(500).json({
+      success: false,
+      message: "Admin authentication is not configured.",
+    });
+  }
+
+  const token = createAdminToken(email);
+  setAdminCookie(res, token);
 
   return res.status(200).json({
     success: true,
-    token: record.token,
+    message: "Admin login successful.",
+    token,
     admin: {
-      email: record.email,
+      email,
       role: "admin",
       type: "admin",
     },
