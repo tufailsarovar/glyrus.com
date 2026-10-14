@@ -1,7 +1,8 @@
 // Glyrus — Tracking.jsx
 
 import React, { useState } from "react";
-
+import CheckCircleRounded from "@mui/icons-material/CheckCircleRounded";
+import { useLocation } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -45,6 +46,7 @@ const STATUS_FLOW = [
 ];
 
 const Tracking = () => {
+  const location = useLocation();
   const [trackingNumber, setTrackingNumber] = useState("");
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -117,6 +119,183 @@ const Tracking = () => {
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
+        {location.state?.paymentConfirmed && (
+          <MotionBox
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            sx={{
+              maxWidth: 1100,
+              mx: "auto",
+              mt: { xs: 1.5, sm: 2 },
+              mb: 2,
+              px: { xs: 1.5, sm: 2 },
+              py: { xs: 1.4, sm: 1.8 },
+              borderRadius: { xs: 1.5, sm: 2 },
+              background: "#f1faf3",
+              border: "1px solid #d5ead9",
+            }}
+          >
+            <Stack direction="row" spacing={1.2} alignItems="flex-start">
+              <CheckCircleRounded
+                sx={{ color: "#218838", fontSize: 27, flexShrink: 0 }}
+              />
+
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 850,
+                    color: "#216e32",
+                    fontSize: { xs: "0.92rem", sm: "1.05rem" },
+                  }}
+                >
+                  Payment Successful!
+                </Typography>
+
+                <Typography
+                  sx={{
+                    mt: 0.3,
+                    color: "#526456",
+                    fontSize: { xs: "0.76rem", sm: "0.84rem" },
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Thank you for choosing Glyrus. Your order is confirmed and
+                  being processed. Confirmation details have been sent to your
+                  email.
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "block",
+                      mt: 0.5,
+                      px: 1,
+                      py: 0.6,
+                      borderRadius: 1,
+                      background: "#fff3cd",
+                      border: "1px solid #ffe08a",
+                      color: "#805b00",
+                      fontWeight: 800,
+                    }}
+                  >
+                    ⚠️ Didn't receive the email? Please check your Spam or Junk
+                    folder.
+                  </Box>
+                </Typography>
+
+                {/* Tracking ID with inline copy button */}
+                <Box
+                  sx={{
+                    mt: 1,
+                    px: 1,
+                    py: 0.8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.8,
+                    borderRadius: 1,
+                    background: "#fff",
+                    border: "1px solid #dce9df",
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: "0.65rem", color: "#718075" }}>
+                      TRACKING ID
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        fontSize: "0.82rem",
+                        fontWeight: 850,
+                        color: "#17251a",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {location.state?.trackingNumber ||
+                        "Check your order email"}
+                    </Typography>
+                  </Box>
+
+                  {location.state?.trackingNumber && (
+                    <Button
+                      size="small"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(
+                            location.state.trackingNumber,
+                          );
+                        } catch {
+                          window.prompt(
+                            "Copy your tracking ID:",
+                            location.state.trackingNumber,
+                          );
+                        }
+                      }}
+                      sx={{
+                        flexShrink: 0,
+                        minWidth: 0,
+                        px: 1,
+                        py: 0.35,
+                        borderRadius: 1,
+                        background: "#eaf0ff",
+                        color: "#2457c5",
+                        fontSize: "0.7rem",
+                        fontWeight: 850,
+                        textTransform: "none",
+                        "&:hover": { background: "#dbe5ff" },
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  )}
+                </Box>
+
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  alignItems={{ xs: "stretch", sm: "center" }}
+                  sx={{ mt: 1.2 }}
+                >
+                  <Typography
+                    sx={{
+                      flex: 1,
+                      fontSize: { xs: "0.76rem", sm: "0.82rem" },
+                      fontWeight: 750,
+                      color: "#303b31",
+                    }}
+                  >
+                    Get access to your business dashboard
+                  </Typography>
+
+                  <Button
+                    component="a"
+                    href="https://tapreview-rho.vercel.app/signup"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="contained"
+                    sx={{
+                      minHeight: 38,
+                      px: 1.8,
+                      borderRadius: 1.2,
+                      background: "#ffca05",
+                      color: "#171717",
+                      fontSize: "0.8rem",
+                      fontWeight: 850,
+                      textTransform: "none",
+                      whiteSpace: "nowrap",
+                      boxShadow: "none",
+                      "&:hover": {
+                        background: "#edb900",
+                        boxShadow: "none",
+                      },
+                    }}
+                  >
+                    Get Dashboard Access →
+                  </Button>
+                </Stack>
+              </Box>
+            </Stack>
+          </MotionBox>
+        )}
+
         <Box
           sx={{
             position: "absolute",
@@ -343,69 +522,6 @@ const Tracking = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {location.state?.paymentConfirmed && (
-              <MotionBox
-                initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.4 }}
-                sx={{
-                  mb: 2,
-                  p: { xs: 1.8, sm: 2.2 },
-                  borderRadius: 3,
-                  background:
-                    "linear-gradient(135deg, #f1fff5 0%, #ffffff 100%)",
-                  border: "1px solid rgba(46, 125, 50, 0.16)",
-                  boxShadow: "0 10px 30px rgba(46,125,50,0.06)",
-                }}
-              >
-                <Stack direction="row" spacing={1.3} alignItems="flex-start">
-                  <CheckCircleRounded
-                    sx={{
-                      color: "#2e7d32",
-                      fontSize: { xs: 30, sm: 34 },
-                      mt: 0.1,
-                    }}
-                  />
-
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontSize: { xs: "1rem", sm: "1.15rem" },
-                        fontWeight: 900,
-                        color: "#216e27",
-                      }}
-                    >
-                      Payment Confirmed Successfully
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        mt: 0.35,
-                        fontSize: { xs: "0.76rem", sm: "0.84rem" },
-                        color: "#4d5f4f",
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      Your order has been confirmed and is now being processed.
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        mt: 0.7,
-                        fontSize: { xs: "0.72rem", sm: "0.8rem" },
-                        color: "#667366",
-                        lineHeight: 1.55,
-                      }}
-                    >
-                      📧 Your order confirmation, tracking ID and payment
-                      details have been sent to your email. Please check your
-                      <strong> Spam/Junk folder</strong> if you don't see the
-                      email.
-                    </Typography>
-                  </Box>
-                </Stack>
-              </MotionBox>
-            )}
             <Paper
               elevation={0}
               sx={{
